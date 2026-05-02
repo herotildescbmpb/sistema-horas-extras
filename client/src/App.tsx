@@ -4,34 +4,44 @@ import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
-import Home from "./pages/Home";
+import AppLayout from "./components/AppLayout";
+import Dashboard from "./pages/Dashboard";
+import OvertimeList from "./pages/OvertimeList";
+import OvertimeForm from "./pages/OvertimeForm";
+import AdminPanel from "./pages/AdminPanel";
+import AdminUsers from "./pages/AdminUsers";
+import AdminDepartments from "./pages/AdminDepartments";
+import Reports from "./pages/Reports";
+import Profile from "./pages/Profile";
 
 function Router() {
-  // make sure to consider if you need authentication for certain routes
   return (
-    <Switch>
-      <Route path={"/"} component={Home} />
-      <Route path={"/404"} component={NotFound} />
-      {/* Final fallback route */}
-      <Route component={NotFound} />
-    </Switch>
+    <AppLayout>
+      <Switch>
+        <Route path="/" component={Dashboard} />
+        <Route path="/horas" component={OvertimeList} />
+        <Route path="/horas/novo" component={() => <OvertimeForm />} />
+        <Route path="/horas/:id/editar">
+          {(params) => <OvertimeForm editId={parseInt(params.id)} />}
+        </Route>
+        <Route path="/relatorios" component={Reports} />
+        <Route path="/admin" component={AdminPanel} />
+        <Route path="/admin/usuarios" component={AdminUsers} />
+        <Route path="/admin/setores" component={AdminDepartments} />
+        <Route path="/perfil" component={Profile} />
+        <Route path="/404" component={NotFound} />
+        <Route component={NotFound} />
+      </Switch>
+    </AppLayout>
   );
 }
-
-// NOTE: About Theme
-// - First choose a default theme according to your design style (dark or light bg), than change color palette in index.css
-//   to keep consistent foreground/background color across components
-// - If you want to make theme switchable, pass `switchable` ThemeProvider and use `useTheme` hook
 
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider
-        defaultTheme="light"
-        // switchable
-      >
+      <ThemeProvider defaultTheme="light">
         <TooltipProvider>
-          <Toaster />
+          <Toaster richColors position="top-right" />
           <Router />
         </TooltipProvider>
       </ThemeProvider>
