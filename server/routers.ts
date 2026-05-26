@@ -16,6 +16,8 @@ import {
   getOvertimeRecordById,
   getOvertimeRecordsByUser,
   reviewOvertimeRecord,
+  searchServidores,
+  getServidorByMatricula,
   setUserRole,
   updateOvertimeRecord,
   updateUserProfile,
@@ -35,9 +37,9 @@ const MULTIPLIERS = { weekday: "1.50", saturday: "2.00", sunday_holiday: "2.00" 
 function calcMinutes(start: string, end: string): number {
   const [sh, sm] = start.split(":").map(Number);
   const [eh, em] = end.split(":").map(Number);
-  const startTotal = sh * 60 + sm;
-  let endTotal = eh * 60 + em;
-  if (endTotal <= startTotal) endTotal += 24 * 60; // overnight
+  const startTotal = sh * 60 + (sm || 0);
+  let endTotal = eh * 60 + (em || 0);
+  if (endTotal <= startTotal) endTotal += 24 * 60;
   return endTotal - startTotal;
 }
 
@@ -54,23 +56,32 @@ export const appRouter = router({
     }),
   }),
 
-  // ─── Departments ────────────────────────────────────────────────────────────
+  // ─── Servidores ──────────────────────────────────────────────────────────────
+  servidores: router({
+    search: protectedProcedure
+      .input(z.object({ query: z.string().min(2) }))
+      .query(({ input }) => searchServidores(input.query, 15)),
+    getByMatricula: protectedProcedure
+      .input(z.object({ matricula: z.string() }))
+      .query(({ input }) => getServidorByMatricula(input.matricula)),
+  }),
+
+  // ─── Departments ─────────────────────────────────────────────────────────────
   departments: router({
     list: protectedProcedure.query(() => getDepartments()),
-
     create: adminProcedure
       .input(z.object({ name: z.string().min(1), description: z.string().optional() }))
       .mutation(({ input }) => createDepartment({ name: input.name, description: input.description })),
   }),
 
-  // ─── Users (admin) ──────────────────────────────────────────────────────────
+  // ─── Users ───────────────────────────────────────────────────────────────────
   users: router({
     list: adminProcedure.query(() => getAllUsers()),
 
     updateProfile: protectedProcedure
       .input(
         z.object({
-          targetUserId: z.number().optional(), // admin can pass a target userId
+          targetUserId: z.number().optional(),
           name: z.string().optional(),
           department: z.string().optional(),
           position: z.string().optional(),
@@ -80,8 +91,7 @@ export const appRouter = router({
       )
       .mutation(({ ctx, input }) => {
         const { targetUserId, ...data } = input;
-        // Only admins can update other users' profiles
-        const userId = (ctx.user.role === "admin" && targetUserId) ? targetUserId : ctx.user.id;
+        const userId = ctx.user.role === "admin" && targetUserId ? targetUserId : ctx.user.id;
         return updateUserProfile(userId, data);
       }),
 
@@ -90,8 +100,19 @@ export const appRouter = router({
       .mutation(({ input }) => setUserRole(input.userId, input.role)),
   }),
 
-  // ─── Overtime Records ────────────────────────────────────────────────────────
+  // ─── Overtime Records ─────────────────────────────────────────────────────────
   overtime: router({
+    getById: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const record = await getOvertimeRecordById(input.id);
+        if (!record) throw new TRPCError({ code: "NOT_FOUND" });
+        if (record.userId !== ctx.user.id && ctx.user.role !== "admin") {
+          throw new TRPCError({ code: "FORBIDDEN" });
+        }
+        return record;
+      }),
+
     list: protectedProcedure
       .input(
         z.object({
@@ -123,6 +144,7 @@ export const appRouter = router({
       .input(
         z.object({
           tipoEscala: z.string().optional(),
+          servidor: z.string().optional(),
           date: z.string(),
           endDate: z.string().optional(),
           startTime: z.string(),
@@ -130,20 +152,19 @@ export const appRouter = router({
           funcao: z.string().optional(),
           modalidade: z.string().optional(),
           dayType: z.enum(["weekday", "saturday", "sunday_holiday"]),
+          totalMinutes: z.number().optional(),
           reason: z.string().optional(),
           project: z.string().optional(),
           department: z.string().optional(),
         })
       )
       .mutation(({ ctx, input }) => {
-        const totalMinutes = calcMinutes(input.startTime, input.endTime);
+        const totalMinutes = input.totalMinutes ?? calcMinutes(input.startTime, input.endTime);
         const multiplier = MULTIPLIERS[input.dayType];
-        // servidor = matricula do usuário logado (preenchida automaticamente)
-        const servidor = (ctx.user as any).matricula ?? undefined;
         return createOvertimeRecord({
           userId: ctx.user.id,
           tipoEscala: input.tipoEscala,
-          servidor,
+          servidor: input.servidor ?? (ctx.user as any).matricula ?? undefined,
           date: input.date,
           endDate: input.endDate,
           startTime: input.startTime,
@@ -155,7 +176,7 @@ export const appRouter = router({
           multiplier,
           reason: input.reason,
           project: input.project,
-          department: input.department ?? ctx.user.department ?? undefined,
+          department: input.department ?? (ctx.user as any).department ?? undefined,
         });
       }),
 
@@ -164,6 +185,7 @@ export const appRouter = router({
         z.object({
           id: z.number(),
           tipoEscala: z.string().optional(),
+          servidor: z.string().optional(),
           date: z.string().optional(),
           endDate: z.string().optional(),
           startTime: z.string().optional(),
@@ -171,6 +193,7 @@ export const appRouter = router({
           funcao: z.string().optional(),
           modalidade: z.string().optional(),
           dayType: z.enum(["weekday", "saturday", "sunday_holiday"]).optional(),
+          totalMinutes: z.number().optional(),
           reason: z.string().optional(),
           project: z.string().optional(),
           department: z.string().optional(),
@@ -188,7 +211,7 @@ export const appRouter = router({
         const { id, ...data } = input;
         const start = data.startTime ?? record.startTime;
         const end = data.endTime ?? record.endTime;
-        const totalMinutes = calcMinutes(start, end);
+        const totalMinutes = data.totalMinutes ?? calcMinutes(start, end);
         const dayType = data.dayType ?? record.dayType;
         const multiplier = MULTIPLIERS[dayType];
         return updateOvertimeRecord(id, { ...data, totalMinutes, multiplier });
@@ -221,7 +244,7 @@ export const appRouter = router({
       ),
   }),
 
-  // ─── Dashboard / Reports ─────────────────────────────────────────────────────
+  // ─── Reports ──────────────────────────────────────────────────────────────────
   reports: router({
     monthSummary: protectedProcedure
       .input(z.object({ year: z.number(), month: z.number() }))
@@ -243,25 +266,14 @@ export const appRouter = router({
         const isAdmin = ctx.user.role === "admin";
         let records;
         if (isAdmin && input.userId) {
-          records = await getAllOvertimeRecords({
-            startDate: input.startDate,
-            endDate: input.endDate,
-            userId: input.userId,
-          });
+          records = await getAllOvertimeRecords({ startDate: input.startDate, endDate: input.endDate, userId: input.userId });
         } else if (isAdmin && !input.userId) {
-          records = await getAllOvertimeRecords({
-            startDate: input.startDate,
-            endDate: input.endDate,
-          });
+          records = await getAllOvertimeRecords({ startDate: input.startDate, endDate: input.endDate });
         } else {
-          records = await getOvertimeRecordsByUser(ctx.user.id, {
-            startDate: input.startDate,
-            endDate: input.endDate,
-          });
+          records = await getOvertimeRecordsByUser(ctx.user.id, { startDate: input.startDate, endDate: input.endDate });
         }
 
-        // Formato compatível com o CSV de escalas original
-        const header = "Tipo de Escala;Servidor;Data Início;Hora Início:;Data Final;Hora Fim:;Função;Modalidade;Status;Horas;Multiplicador;Projeto;Setor;Motivo;Funcionário";
+        const header = "Tipo de Escala;Servidor;Data Início;Hora Início;Data Final;Hora Fim;Função;Modalidade;Status;Horas;Multiplicador;Projeto;Setor;Motivo;Funcionário";
         const rows = records.map((r) => {
           const rec = r as any;
           const servidor = rec.servidor ?? rec.userMatricula ?? "";

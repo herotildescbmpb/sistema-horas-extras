@@ -1,162 +1,241 @@
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useLocation } from "wouter";
 import { toast } from "sonner";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { useLocation, useParams } from "wouter";
+import { useEffect, useState, useRef, useMemo } from "react";
+import {
+  Card, CardContent, CardHeader, CardTitle, CardDescription,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, Clock, Save, Loader2, Info, User, Tag, FileText } from "lucide-react";
-import { Link } from "wouter";
-import { format } from "date-fns";
-import { useEffect } from "react";
+import { Badge } from "@/components/ui/badge";
+import {
+  Clock, Save, ArrowLeft, Loader2, Search, User, Calendar, Info, CheckCircle2, Tag,
+} from "lucide-react";
+import AppLayout from "@/components/AppLayout";
 
-const schema = z.object({
-  // Campos do CSV de escalas
-  tipoEscala: z.string().optional(),
-  date: z.string().min(1, "Data de início é obrigatória"),
-  endDate: z.string().optional(),
-  startTime: z.string().min(1, "Hora de início é obrigatória"),
-  endTime: z.string().min(1, "Hora de fim é obrigatória"),
-  funcao: z.string().optional(),
-  modalidade: z.string().optional(),
-  // Campos complementares
-  dayType: z.enum(["weekday", "saturday", "sunday_holiday"]),
-  reason: z.string().optional(),
-  project: z.string().optional(),
-  department: z.string().optional(),
-});
+// ─── Constants ────────────────────────────────────────────────────────────────
 
-type FormData = z.infer<typeof schema>;
-
-const dayTypeLabels = {
-  weekday: { label: "Dia Útil", multiplier: "1,5×", color: "text-blue-600" },
-  saturday: { label: "Sábado", multiplier: "2,0×", color: "text-purple-600" },
-  sunday_holiday: { label: "Domingo / Feriado", multiplier: "2,0×", color: "text-orange-600" },
-};
-
-const TIPO_ESCALA_OPTIONS = [
+const TIPOS_ESCALA = [
   "Expediente",
-  "Plantão",
+  "Formatura",
+  "Instrução e Treinamento",
+  "Operacional",
+  "Prontidão",
+  "Representação",
   "Sobreaviso",
-  "Hora Extra",
-  "Trabalho Noturno",
-  "Outro",
 ];
 
-const MODALIDADE_OPTIONS = [
-  "Especial",
-  "Normal",
-  "Remoto",
-  "Presencial",
-  "Híbrido",
+const FUNCOES = [
+  "Chefe",
+  "Auxiliar Administrativo",
+  "Diretor",
+  "Vice-Diretor",
 ];
+
+// Time slots from 13:00 to 23:50 every 10 min
+function generateTimeSlots(): string[] {
+  const slots: string[] = [];
+  let h = 13, m = 0;
+  while (h * 60 + m <= 23 * 60 + 50) {
+    slots.push(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
+    m += 10;
+    if (m >= 60) { h++; m -= 60; }
+  }
+  return slots;
+}
+const TIME_SLOTS = generateTimeSlots();
+
+// ─── Date helpers ─────────────────────────────────────────────────────────────
+
+function parseDateBR(str: string): Date | null {
+  const match = str?.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!match) return null;
+  const date = new Date(Number(match[3]), Number(match[2]) - 1, Number(match[1]));
+  return isNaN(date.getTime()) ? null : date;
+}
+
+function toISO(str: string): string {
+  const m = str?.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  return m ? `${m[3]}-${m[2]}-${m[1]}` : "";
+}
+
+function fromISO(iso: string): string {
+  const m = iso?.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : iso ?? "";
+}
+
+const FIXED_HOLIDAYS: [number, number][] = [
+  [1,1],[4,21],[5,1],[9,7],[10,12],[11,2],[11,15],[12,25],
+];
+
+function isBrazilianHoliday(date: Date): boolean {
+  const m = date.getMonth() + 1, d = date.getDate();
+  return FIXED_HOLIDAYS.some(([hm, hd]) => hm === m && hd === d);
+}
+
+function getModalidade(dateStr: string): "Especial" | "Extraordinário" | "" {
+  const date = parseDateBR(dateStr);
+  if (!date) return "";
+  const dow = date.getDay();
+  return (dow === 5 || dow === 6 || dow === 0 || isBrazilianHoliday(date))
+    ? "Especial" : "Extraordinário";
+}
+
+function getDayType(dateStr: string): "weekday" | "saturday" | "sunday_holiday" {
+  const date = parseDateBR(dateStr);
+  if (!date) return "weekday";
+  const dow = date.getDay();
+  if (dow === 6) return "saturday";
+  if (dow === 0 || isBrazilianHoliday(date)) return "sunday_holiday";
+  return "weekday";
+}
 
 function calcMinutes(start: string, end: string): number {
   if (!start || !end) return 0;
   const [sh, sm] = start.split(":").map(Number);
   const [eh, em] = end.split(":").map(Number);
-  let startTotal = sh * 60 + (sm || 0);
-  let endTotal = eh * 60 + (em || 0);
-  if (endTotal <= startTotal) endTotal += 24 * 60;
-  return endTotal - startTotal;
+  const s = sh * 60 + sm;
+  let e = eh * 60 + em;
+  if (e <= s) e += 24 * 60;
+  return e - s;
 }
 
-function formatMinutes(minutes: number) {
-  if (minutes <= 0) return "--";
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  if (m === 0) return `${h}h`;
-  return `${h}h ${m}m`;
+function formatMinutes(min: number): string {
+  if (!min || min <= 0) return "0h";
+  const h = Math.floor(min / 60), m = min % 60;
+  return m === 0 ? `${h}h` : `${h}h ${m}min`;
 }
 
-interface OvertimeFormProps {
-  editId?: number;
-}
+// ─── Zod Schema ───────────────────────────────────────────────────────────────
 
-export default function OvertimeForm({ editId }: OvertimeFormProps) {
-  const [, navigate] = useLocation();
-  const utils = trpc.useUtils();
+const schema = z.object({
+  tipoEscala: z.string().min(1, "Tipo de escala obrigatório"),
+  servidorNome: z.string().min(2, "Nome do servidor obrigatório"),
+  matricula: z.string().min(1, "Matrícula obrigatória"),
+  posto: z.string().optional(),
+  date: z.string().regex(/^\d{2}\/\d{2}\/\d{4}$/, "Data inválida — use DD/MM/AAAA"),
+  startTime: z.string().min(1, "Hora início obrigatória"),
+  endTime: z.string().min(1, "Hora fim obrigatória"),
+  funcao: z.string().min(1, "Função obrigatória"),
+  modalidade: z.string().min(1, "Modalidade obrigatória"),
+  reason: z.string().min(1, "Justificativa obrigatória"),
+  department: z.string().optional(),
+  project: z.string().optional(),
+});
+
+type FormData = z.infer<typeof schema>;
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
+export default function OvertimeForm() {
   const { user } = useAuth();
-  const isEdit = !!editId;
+  const [, navigate] = useLocation();
+  const params = useParams<{ id?: string }>();
+  const isEdit = !!params.id;
+  const utils = trpc.useUtils();
 
-  const { data: departments } = trpc.departments.list.useQuery();
-
-  const { data: existingRecord, isLoading: loadingRecord } = trpc.overtime.list.useQuery(
-    {},
-    { enabled: isEdit, select: (data) => data.find((r) => r.id === editId) }
-  );
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const autocompleteRef = useRef<HTMLDivElement>(null);
 
   const {
-    register,
-    handleSubmit,
-    watch,
-    setValue,
-    reset,
+    register, handleSubmit, control, watch, setValue, reset,
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
-      date: format(new Date(), "yyyy-MM-dd"),
-      endDate: format(new Date(), "yyyy-MM-dd"),
-      dayType: "weekday",
-      tipoEscala: "Expediente",
-      modalidade: "Especial",
-      funcao: (user as any)?.position ?? "",
+      tipoEscala: "", servidorNome: "", matricula: "", posto: "",
+      date: "", startTime: "", endTime: "", funcao: "", modalidade: "",
+      reason: "", department: "", project: "",
     },
   });
 
+  const watchDate = watch("date");
+  const watchStart = watch("startTime");
+  const watchEnd = watch("endTime");
+  const watchModalidade = watch("modalidade");
+
+  // Auto-set modalidade when date changes
+  useEffect(() => {
+    if (watchDate?.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+      setValue("modalidade", getModalidade(watchDate), { shouldValidate: true });
+    }
+  }, [watchDate, setValue]);
+
+  // Current record duration
+  const currentMinutes = useMemo(() => calcMinutes(watchStart, watchEnd), [watchStart, watchEnd]);
+
+  // Month total query
+  const dateObj = parseDateBR(watchDate);
+  const qYear = dateObj?.getFullYear() ?? new Date().getFullYear();
+  const qMonth = dateObj ? dateObj.getMonth() + 1 : new Date().getMonth() + 1;
+  const { data: monthSummary } = trpc.reports.monthSummary.useQuery(
+    { year: qYear, month: qMonth },
+    { enabled: !!user }
+  );
+
+  // Servidor search
+  const { data: searchResults, isFetching: isSearching } =
+    trpc.servidores.search.useQuery(
+      { query: searchQuery },
+      { enabled: searchQuery.length >= 2 }
+    );
+
+  // Load existing record for edit
+  const { data: existingRecord } = trpc.overtime.getById.useQuery(
+    { id: Number(params.id) },
+    { enabled: isEdit && !!params.id }
+  );
+
   useEffect(() => {
     if (existingRecord) {
+      const nome = existingRecord.servidor ?? "";
       reset({
-        tipoEscala: (existingRecord as any).tipoEscala ?? "Expediente",
-        date: existingRecord.date,
-        endDate: (existingRecord as any).endDate ?? existingRecord.date,
+        tipoEscala: (existingRecord as any).tipoEscala ?? "",
+        servidorNome: nome,
+        matricula: nome,
+        posto: "",
+        date: fromISO(existingRecord.date),
         startTime: existingRecord.startTime,
         endTime: existingRecord.endTime,
         funcao: (existingRecord as any).funcao ?? "",
-        modalidade: (existingRecord as any).modalidade ?? "Especial",
-        dayType: existingRecord.dayType,
+        modalidade: (existingRecord as any).modalidade ?? "",
         reason: existingRecord.reason ?? "",
-        project: existingRecord.project ?? "",
         department: existingRecord.department ?? "",
+        project: existingRecord.project ?? "",
       });
+      setSearchQuery(nome);
     }
   }, [existingRecord, reset]);
 
-  // Auto-fill funcao from user profile
+  // Close autocomplete on outside click
   useEffect(() => {
-    if (!isEdit && user && (user as any).position) {
-      setValue("funcao", (user as any).position);
+    function handleClick(e: MouseEvent) {
+      if (autocompleteRef.current && !autocompleteRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false);
+      }
     }
-  }, [user, isEdit, setValue]);
-
-  const startTime = watch("startTime");
-  const endTime = watch("endTime");
-  const dayType = watch("dayType");
-  const totalMinutes = calcMinutes(startTime, endTime);
-  const multiplier = dayType === "weekday" ? 1.5 : 2.0;
-  const effectiveHours = (totalMinutes / 60) * multiplier;
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
 
   const createMutation = trpc.overtime.create.useMutation({
     onSuccess: () => {
       utils.overtime.list.invalidate();
       utils.reports.monthSummary.invalidate();
-      toast.success("Escala registrada com sucesso!");
+      toast.success("Registro criado com sucesso!");
       navigate("/horas");
     },
-    onError: (err) => toast.error(err.message || "Erro ao registrar escala"),
+    onError: (err) => toast.error(err.message),
   });
 
   const updateMutation = trpc.overtime.update.useMutation({
@@ -166,269 +245,442 @@ export default function OvertimeForm({ editId }: OvertimeFormProps) {
       toast.success("Registro atualizado com sucesso!");
       navigate("/horas");
     },
-    onError: (err) => toast.error(err.message || "Erro ao atualizar registro"),
+    onError: (err) => toast.error(err.message),
   });
 
-  const onSubmit = (data: FormData) => {
-    if (isEdit && editId) {
-      updateMutation.mutate({ id: editId, ...data });
+  function onSubmit(data: FormData) {
+    const isoDate = toISO(data.date);
+    const dayType = getDayType(data.date);
+    const totalMinutes = calcMinutes(data.startTime, data.endTime);
+    const payload = {
+      tipoEscala: data.tipoEscala,
+      servidor: data.matricula,
+      date: isoDate,
+      startTime: data.startTime,
+      endTime: data.endTime,
+      funcao: data.funcao,
+      modalidade: data.modalidade,
+      dayType,
+      totalMinutes,
+      reason: data.reason,
+      department: data.department && data.department !== "none" ? data.department : undefined,
+      project: data.project || undefined,
+    };
+    if (isEdit) {
+      updateMutation.mutate({ id: Number(params.id), ...payload });
     } else {
-      createMutation.mutate(data);
+      createMutation.mutate(payload);
     }
-  };
-
-  if (isEdit && loadingRecord) {
-    return (
-      <div className="p-6 lg:p-8 max-w-2xl mx-auto flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-      </div>
-    );
   }
 
-  const userMatricula = (user as any)?.matricula;
+  function selectServidor(s: { nome: string; matricula: string; posto?: string | null }) {
+    setValue("servidorNome", s.nome, { shouldValidate: true });
+    setValue("matricula", s.matricula, { shouldValidate: true });
+    setValue("posto", s.posto ?? "");
+    setSearchQuery(s.nome);
+    setShowSuggestions(false);
+  }
+
+  const isPending = isSubmitting || createMutation.isPending || updateMutation.isPending;
 
   return (
-    <div className="p-6 lg:p-8 max-w-2xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-8">
-        <Button variant="ghost" size="icon" asChild className="h-9 w-9">
-          <Link href="/horas">
+    <AppLayout>
+      <div className="max-w-3xl mx-auto space-y-6 pb-12">
+
+        {/* Header */}
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" onClick={() => navigate("/horas")} className="h-9 w-9 rounded-full">
             <ArrowLeft className="w-4 h-4" />
-          </Link>
-        </Button>
-        <div>
-          <h1 className="text-xl font-bold text-foreground">
-            {isEdit ? "Editar Registro" : "Novo Registro de Escala / Horas Extras"}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {isEdit ? "Atualize as informações do registro" : "Preencha os dados conforme a escala realizada"}
-          </p>
-        </div>
-      </div>
-
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-
-        {/* Servidor info (read-only) */}
-        {userMatricula && (
-          <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-muted/40 border border-border/50">
-            <User className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-            <span className="text-xs text-muted-foreground">
-              Servidor: <span className="font-semibold text-foreground">{userMatricula}</span>
-              {user?.name && <> — {user.name}</>}
-            </span>
+          </Button>
+          <div>
+            <h1 className="text-xl font-bold text-foreground">
+              {isEdit ? "Editar Registro" : "Novo Registro de Escala"}
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              {isEdit ? "Atualize as informações do registro" : "Preencha todos os campos para registrar a escala"}
+            </p>
           </div>
-        )}
+        </div>
 
-        {/* Tipo de Escala e Modalidade */}
-        <Card className="shadow-sm border-border/60">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-sm font-semibold flex items-center gap-2">
-              <Tag className="w-4 h-4 text-primary" />
-              Tipo de Escala
-            </CardTitle>
-            <CardDescription className="text-xs">Classificação da escala conforme o sistema</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium">Tipo de Escala</Label>
-                <Select
-                  value={watch("tipoEscala") ?? ""}
-                  onValueChange={(v) => setValue("tipoEscala", v)}
-                >
-                  <SelectTrigger className="h-10">
-                    <SelectValue placeholder="Selecione o tipo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {TIPO_ESCALA_OPTIONS.map((opt) => (
-                      <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+        {/* Duration cards */}
+        <div className="grid grid-cols-2 gap-4">
+          <Card className="border-border/60 bg-card/80">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <Clock className="w-5 h-5 text-primary" />
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium">Modalidade</Label>
-                <Select
-                  value={watch("modalidade") ?? ""}
-                  onValueChange={(v) => setValue("modalidade", v)}
-                >
-                  <SelectTrigger className="h-10">
-                    <SelectValue placeholder="Selecione a modalidade" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {MODALIDADE_OPTIONS.map((opt) => (
-                      <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="funcao" className="text-xs font-medium">Função</Label>
-              <Input
-                id="funcao"
-                placeholder="Ex: Auxiliar Administrativo, Analista"
-                {...register("funcao")}
-                className="h-10"
-              />
-              <p className="text-xs text-muted-foreground">
-                Preenchida automaticamente com o cargo do perfil
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Data e Horário */}
-        <Card className="shadow-sm border-border/60">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-sm font-semibold flex items-center gap-2">
-              <Clock className="w-4 h-4 text-primary" />
-              Data e Horário
-            </CardTitle>
-            <CardDescription className="text-xs">
-              Período da escala — Data Início, Hora Início, Data Final e Hora Fim
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="date" className="text-xs font-medium">Data Início *</Label>
-                <Input id="date" type="date" {...register("date")} className="h-10" />
-                {errors.date && <p className="text-xs text-destructive">{errors.date.message}</p>}
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="startTime" className="text-xs font-medium">Hora Início *</Label>
-                <Input id="startTime" type="time" {...register("startTime")} className="h-10" />
-                {errors.startTime && <p className="text-xs text-destructive">{errors.startTime.message}</p>}
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="endDate" className="text-xs font-medium">Data Final</Label>
-                <Input id="endDate" type="date" {...register("endDate")} className="h-10" />
-                <p className="text-xs text-muted-foreground">Deixe igual à data início se for no mesmo dia</p>
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="endTime" className="text-xs font-medium">Hora Fim *</Label>
-                <Input id="endTime" type="time" {...register("endTime")} className="h-10" />
-                {errors.endTime && <p className="text-xs text-destructive">{errors.endTime.message}</p>}
-              </div>
-            </div>
-
-            {/* Time summary */}
-            {totalMinutes > 0 && (
-              <div className="flex items-center gap-2 p-3 rounded-lg bg-primary/5 border border-primary/10">
-                <Info className="w-4 h-4 text-primary flex-shrink-0" />
-                <p className="text-xs text-foreground">
-                  <span className="font-semibold">{formatMinutes(totalMinutes)}</span> de horas extras ·{" "}
-                  <span className="font-semibold">{effectiveHours.toFixed(2)}h</span> efetivas (multiplicador{" "}
-                  <span className={`font-semibold ${dayTypeLabels[dayType]?.color}`}>
-                    {dayTypeLabels[dayType]?.multiplier}
-                  </span>
-                  )
+              <div>
+                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Este Registro</p>
+                <p className="text-lg font-bold text-foreground">
+                  {currentMinutes > 0 ? formatMinutes(currentMinutes) : "—"}
                 </p>
               </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Classificação */}
-        <Card className="shadow-sm border-border/60">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-sm font-semibold">Classificação</CardTitle>
-            <CardDescription className="text-xs">Tipo de dia e setor responsável</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium">Tipo de Dia *</Label>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                {(Object.entries(dayTypeLabels) as [keyof typeof dayTypeLabels, typeof dayTypeLabels[keyof typeof dayTypeLabels]][]).map(([value, info]) => (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => setValue("dayType", value)}
-                    className={`flex flex-col items-start p-3 rounded-lg border-2 text-left transition-all ${
-                      dayType === value
-                        ? "border-primary bg-primary/5"
-                        : "border-border hover:border-border/80 hover:bg-muted/30"
-                    }`}
-                  >
-                    <span className="text-xs font-semibold text-foreground">{info.label}</span>
-                    <span className={`text-xs font-bold ${info.color}`}>{info.multiplier}</span>
-                  </button>
-                ))}
+            </CardContent>
+          </Card>
+          <Card className="border-border/60 bg-card/80">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center flex-shrink-0">
+                <CheckCircle2 className="w-5 h-5 text-amber-500" />
               </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="project" className="text-xs font-medium">Projeto / Atividade</Label>
-                <Input id="project" placeholder="Ex: Projeto Alpha" {...register("project")} className="h-10" />
+              <div>
+                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Total no Mês</p>
+                <p className="text-lg font-bold text-foreground">
+                  {monthSummary ? formatMinutes(monthSummary.totalMinutes) : "—"}
+                </p>
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="department" className="text-xs font-medium">Setor</Label>
-                {departments && departments.length > 0 ? (
-                  <Select
-                    value={watch("department") ?? ""}
-                    onValueChange={(v) => setValue("department", v)}
-                  >
-                    <SelectTrigger className="h-10">
-                      <SelectValue placeholder="Selecione o setor" />
+            </CardContent>
+          </Card>
+        </div>
+
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+
+          {/* ── Tipo de Escala ── */}
+          <Card className="border-border/60">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Tag className="w-4 h-4 text-primary" />
+                Tipo de Escala *
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Controller
+                name="tipoEscala"
+                control={control}
+                render={({ field }) => (
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <SelectTrigger className={errors.tipoEscala ? "border-destructive" : ""}>
+                      <SelectValue placeholder="Selecione o tipo de escala" />
                     </SelectTrigger>
                     <SelectContent>
-                      {departments.map((d) => (
-                        <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
+                      {TIPOS_ESCALA.map((t) => (
+                        <SelectItem key={t} value={t}>{t}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                ) : (
-                  <Input id="department" placeholder="Ex: TI, RH, Financeiro" {...register("department")} className="h-10" />
+                )}
+              />
+              {errors.tipoEscala && <p className="text-xs text-destructive mt-1">{errors.tipoEscala.message}</p>}
+            </CardContent>
+          </Card>
+
+          {/* ── Servidor ── */}
+          <Card className="border-border/60">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <User className="w-4 h-4 text-primary" />
+                Servidor *
+              </CardTitle>
+              <CardDescription className="text-xs">
+                Digite o nome para buscar e selecionar o servidor — matrícula e posto preenchidos automaticamente
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Autocomplete */}
+              <div ref={autocompleteRef} className="relative">
+                <Label className="text-xs font-medium mb-1.5 block">Nome do Servidor *</Label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                  <Input
+                    className={`pl-9 ${errors.servidorNome ? "border-destructive" : ""}`}
+                    placeholder="Digite o nome do servidor..."
+                    value={searchQuery}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setSearchQuery(val);
+                      setValue("servidorNome", val, { shouldValidate: val.length >= 2 });
+                      setShowSuggestions(val.length >= 2);
+                    }}
+                    onFocus={() => { if (searchQuery.length >= 2) setShowSuggestions(true); }}
+                    autoComplete="off"
+                  />
+                  {isSearching && (
+                    <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
+                  )}
+                </div>
+                {errors.servidorNome && <p className="text-xs text-destructive mt-1">{errors.servidorNome.message}</p>}
+
+                {/* Dropdown */}
+                {showSuggestions && searchResults && searchResults.length > 0 && (
+                  <div className="absolute z-50 top-full mt-1 w-full bg-popover border border-border rounded-lg shadow-xl overflow-hidden">
+                    <div className="max-h-60 overflow-y-auto divide-y divide-border/40">
+                      {searchResults.map((s) => (
+                        <button
+                          key={s.id}
+                          type="button"
+                          className="w-full text-left px-4 py-2.5 hover:bg-accent transition-colors flex items-center justify-between gap-3"
+                          onMouseDown={(e) => { e.preventDefault(); selectServidor(s); }}
+                        >
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-foreground truncate">{s.nome}</p>
+                            <p className="text-xs text-muted-foreground">{s.posto}</p>
+                          </div>
+                          <span className="text-xs font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded flex-shrink-0">
+                            {s.matricula}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {showSuggestions && searchResults?.length === 0 && !isSearching && searchQuery.length >= 2 && (
+                  <div className="absolute z-50 top-full mt-1 w-full bg-popover border border-border rounded-lg shadow-sm px-4 py-3 text-sm text-muted-foreground">
+                    Nenhum servidor encontrado para "{searchQuery}"
+                  </div>
                 )}
               </div>
-            </div>
-          </CardContent>
-        </Card>
 
-        {/* Justificativa */}
-        <Card className="shadow-sm border-border/60">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-sm font-semibold flex items-center gap-2">
-              <FileText className="w-4 h-4 text-primary" />
-              Justificativa
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-1.5">
-              <Label htmlFor="reason" className="text-xs font-medium">Motivo / Descrição</Label>
+              {/* Matrícula + Posto */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-xs font-medium mb-1.5 block">Matrícula *</Label>
+                  <Input
+                    {...register("matricula")}
+                    placeholder="Preenchida automaticamente"
+                    className={`font-mono ${errors.matricula ? "border-destructive" : ""}`}
+                    readOnly
+                  />
+                  {errors.matricula && <p className="text-xs text-destructive mt-1">{errors.matricula.message}</p>}
+                </div>
+                <div>
+                  <Label className="text-xs font-medium mb-1.5 block">Posto / Graduação</Label>
+                  <Input
+                    {...register("posto")}
+                    placeholder="Preenchido automaticamente"
+                    readOnly
+                    className="bg-muted/40 text-muted-foreground"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* ── Data e Horários ── */}
+          <Card className="border-border/60">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-primary" />
+                Data e Horários *
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Data */}
+              <div>
+                <Label className="text-xs font-medium mb-1.5 block">Data *</Label>
+                <Input
+                  {...register("date")}
+                  placeholder="DD/MM/AAAA"
+                  maxLength={10}
+                  className={`max-w-[200px] ${errors.date ? "border-destructive" : ""}`}
+                  onChange={(e) => {
+                    let val = e.target.value.replace(/\D/g, "");
+                    if (val.length > 2) val = val.slice(0, 2) + "/" + val.slice(2);
+                    if (val.length > 5) val = val.slice(0, 5) + "/" + val.slice(5);
+                    val = val.slice(0, 10);
+                    e.target.value = val;
+                    register("date").onChange(e);
+                  }}
+                />
+                {errors.date && <p className="text-xs text-destructive mt-1">{errors.date.message}</p>}
+              </div>
+
+              {/* Hora Início / Hora Fim */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-xs font-medium mb-1.5 block">Hora Início *</Label>
+                  <Controller
+                    name="startTime"
+                    control={control}
+                    render={({ field }) => (
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <SelectTrigger className={errors.startTime ? "border-destructive" : ""}>
+                          <SelectValue placeholder="[HH:MM]" />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-56">
+                          {TIME_SLOTS.map((t) => (
+                            <SelectItem key={t} value={t}>{t}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  {errors.startTime && <p className="text-xs text-destructive mt-1">{errors.startTime.message}</p>}
+                </div>
+                <div>
+                  <Label className="text-xs font-medium mb-1.5 block">Hora Fim *</Label>
+                  <Controller
+                    name="endTime"
+                    control={control}
+                    render={({ field }) => (
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <SelectTrigger className={errors.endTime ? "border-destructive" : ""}>
+                          <SelectValue placeholder="[HH:MM]" />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-56">
+                          {TIME_SLOTS.map((t) => (
+                            <SelectItem key={t} value={t}>{t}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  {errors.endTime && <p className="text-xs text-destructive mt-1">{errors.endTime.message}</p>}
+                </div>
+              </div>
+
+              {/* Live duration */}
+              {currentMinutes > 0 && (
+                <div className="flex items-center gap-2 p-3 bg-primary/5 rounded-lg border border-primary/20">
+                  <Clock className="w-4 h-4 text-primary flex-shrink-0" />
+                  <span className="text-sm text-foreground">
+                    Duração deste registro: <strong>{formatMinutes(currentMinutes)}</strong>
+                  </span>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* ── Função e Modalidade ── */}
+          <Card className="border-border/60">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Info className="w-4 h-4 text-primary" />
+                Função e Modalidade *
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-xs font-medium mb-1.5 block">Função *</Label>
+                  <Controller
+                    name="funcao"
+                    control={control}
+                    render={({ field }) => (
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <SelectTrigger className={errors.funcao ? "border-destructive" : ""}>
+                          <SelectValue placeholder="Selecione a função" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {FUNCOES.map((f) => (
+                            <SelectItem key={f} value={f}>{f}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  {errors.funcao && <p className="text-xs text-destructive mt-1">{errors.funcao.message}</p>}
+                </div>
+                <div>
+                  <Label className="text-xs font-medium mb-1.5 block">Modalidade</Label>
+                  <div className="flex items-center h-10">
+                    {watchModalidade ? (
+                      <Badge
+                        variant="outline"
+                        className={`text-sm px-3 py-1 ${
+                          watchModalidade === "Especial"
+                            ? "bg-amber-500/15 text-amber-700 border-amber-500/30 dark:text-amber-400"
+                            : "bg-blue-500/15 text-blue-700 border-blue-500/30 dark:text-blue-400"
+                        }`}
+                      >
+                        {watchModalidade}
+                      </Badge>
+                    ) : (
+                      <span className="text-sm text-muted-foreground italic">
+                        Automática pela data
+                      </span>
+                    )}
+                    <input type="hidden" {...register("modalidade")} />
+                  </div>
+                  {watchModalidade && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {watchModalidade === "Especial"
+                        ? "Sexta, sábado, domingo ou feriado"
+                        : "Dia útil (segunda a quinta)"}
+                    </p>
+                  )}
+                  {errors.modalidade && <p className="text-xs text-destructive mt-1">{errors.modalidade.message}</p>}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* ── Setor e Projeto ── */}
+          <Card className="border-border/60">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Info className="w-4 h-4 text-primary" />
+                Setor e Projeto
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <DepartmentProjectFields control={control} register={register} />
+            </CardContent>
+          </Card>
+
+          {/* ── Justificativa ── */}
+          <Card className="border-border/60">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Info className="w-4 h-4 text-primary" />
+                Justificativa *
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
               <Textarea
-                id="reason"
-                placeholder="Descreva o motivo da escala ou horas extras realizadas..."
-                rows={3}
                 {...register("reason")}
-                className="resize-none"
+                placeholder="Descreva o motivo da escala, atividade realizada ou observações relevantes..."
+                rows={4}
+                className={errors.reason ? "border-destructive" : ""}
               />
-            </div>
-          </CardContent>
-        </Card>
+              {errors.reason && <p className="text-xs text-destructive mt-1">{errors.reason.message}</p>}
+            </CardContent>
+          </Card>
 
-        {/* Actions */}
-        <div className="flex gap-3 justify-end">
-          <Button type="button" variant="outline" asChild>
-            <Link href="/horas">Cancelar</Link>
-          </Button>
-          <Button
-            type="submit"
-            disabled={isSubmitting || createMutation.isPending || updateMutation.isPending}
-            className="gap-2 min-w-36"
-          >
-            {(isSubmitting || createMutation.isPending || updateMutation.isPending) ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Save className="w-4 h-4" />
-            )}
-            {isEdit ? "Salvar Alterações" : "Registrar Escala"}
-          </Button>
-        </div>
-      </form>
+          {/* Submit */}
+          <div className="flex gap-3 justify-end pt-2">
+            <Button type="button" variant="outline" onClick={() => navigate("/horas")} className="px-6">
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={isPending} className="px-8 gap-2">
+              {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              {isEdit ? "Salvar Alterações" : "Registrar Escala"}
+            </Button>
+          </div>
+        </form>
+      </div>
+    </AppLayout>
+  );
+}
+
+// ─── Sub-component ────────────────────────────────────────────────────────────
+
+function DepartmentProjectFields({ control, register }: any) {
+  const { data: departments } = trpc.departments.list.useQuery();
+  return (
+    <div className="grid grid-cols-2 gap-4">
+      <div>
+        <Label className="text-xs font-medium mb-1.5 block">Setor</Label>
+        <Controller
+          name="department"
+          control={control}
+          render={({ field }) => (
+            <Select onValueChange={field.onChange} value={field.value ?? ""}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o setor" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Nenhum</SelectItem>
+                {departments?.map((d) => (
+                  <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        />
+      </div>
+      <div>
+        <Label className="text-xs font-medium mb-1.5 block">Projeto</Label>
+        <Input {...register("project")} placeholder="Ex: Projeto Alpha" />
+      </div>
     </div>
   );
 }

@@ -4,7 +4,6 @@ import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
-import AppLayout from "./components/AppLayout";
 import Dashboard from "./pages/Dashboard";
 import OvertimeList from "./pages/OvertimeList";
 import OvertimeForm from "./pages/OvertimeForm";
@@ -16,23 +15,19 @@ import Profile from "./pages/Profile";
 
 function Router() {
   return (
-    <AppLayout>
-      <Switch>
-        <Route path="/" component={Dashboard} />
-        <Route path="/horas" component={OvertimeList} />
-        <Route path="/horas/novo" component={() => <OvertimeForm />} />
-        <Route path="/horas/:id/editar">
-          {(params) => <OvertimeForm editId={parseInt(params.id)} />}
-        </Route>
-        <Route path="/relatorios" component={Reports} />
-        <Route path="/admin" component={AdminPanel} />
-        <Route path="/admin/usuarios" component={AdminUsers} />
-        <Route path="/admin/setores" component={AdminDepartments} />
-        <Route path="/perfil" component={Profile} />
-        <Route path="/404" component={NotFound} />
-        <Route component={NotFound} />
-      </Switch>
-    </AppLayout>
+    <Switch>
+      <Route path="/" component={Dashboard} />
+      <Route path="/horas" component={OvertimeList} />
+      <Route path="/horas/novo" component={OvertimeForm} />
+      <Route path="/horas/:id/editar" component={OvertimeForm} />
+      <Route path="/relatorios" component={Reports} />
+      <Route path="/admin" component={AdminPanel} />
+      <Route path="/admin/usuarios" component={AdminUsers} />
+      <Route path="/admin/setores" component={AdminDepartments} />
+      <Route path="/perfil" component={Profile} />
+      <Route path="/404" component={NotFound} />
+      <Route component={NotFound} />
+    </Switch>
   );
 }
 

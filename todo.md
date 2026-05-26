@@ -45,3 +45,20 @@
 - [x] Atualizar exportação CSV para incluir todos os campos do CSV original
 - [x] Adicionar campo matrícula no perfil do usuário
 - [x] Atualizar testes Vitest para cobrir novos campos
+
+## Melhorias no Formulário de Cadastro (v3)
+- [ ] Criar tabela `servidores` no banco com campos: matricula, digito, posto, nome, email, telefone
+- [ ] Popular tabela com os 383 servidores do arquivo Oficiais(1).xlsx
+- [ ] Criar endpoint tRPC `servidores.search` para busca por nome com autocomplete
+- [ ] Tipos de escala: Expediente, Formatura, Instrução e Treinamento, Operacional, Prontidão, Representação, Sobreaviso
+- [ ] Campo servidor: autocomplete por nome → preenche matrícula e posto automaticamente
+- [ ] Campo matrícula: separado e preenchido automaticamente pelo autocomplete
+- [ ] Data em formato DD/MM/AAAA com datepicker
+- [ ] Hora início: dropdown de 13:00 a 23:50 a cada 10 minutos
+- [ ] Hora fim: dropdown de 13:00 a 23:50 a cada 10 minutos
+- [ ] Funções: Chefe, Auxiliar Administrativo, Diretor, Vice-Diretor
+- [ ] Modalidade: automática pela data (sexta/sábado/domingo/feriado → Especial; demais → Extraordinário)
+- [ ] Manter campo de justificativa
+- [ ] Todos os campos obrigatórios para salvar
+- [ ] Exibir horas do registro em andamento (calculado em tempo real)
+- [ ] Exibir total de horas já registradas no mês correspondente

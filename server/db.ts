@@ -1,11 +1,13 @@
 import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
+import { like, or } from "drizzle-orm";
 import {
   departments,
   InsertDepartment,
   InsertOvertimeRecord,
   InsertUser,
   overtimeRecords,
+  servidores,
   users,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
@@ -87,6 +89,32 @@ export async function setUserRole(userId: number, role: "user" | "admin") {
   const db = await getDb();
   if (!db) return;
   await db.update(users).set({ role }).where(eq(users.id, userId));
+}
+
+// ─── Servidores ──────────────────────────────────────────────────────────────
+
+export async function searchServidores(query: string, limit = 10) {
+  const db = await getDb();
+  if (!db) return [];
+  if (!query || query.trim().length < 2) return [];
+  const term = `%${query.trim().toUpperCase()}%`;
+  return db
+    .select()
+    .from(servidores)
+    .where(like(servidores.nome, term))
+    .limit(limit)
+    .orderBy(servidores.nome);
+}
+
+export async function getServidorByMatricula(matricula: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db
+    .select()
+    .from(servidores)
+    .where(eq(servidores.matricula, matricula))
+    .limit(1);
+  return result[0];
 }
 
 // ─── Departments ──────────────────────────────────────────────────────────────
