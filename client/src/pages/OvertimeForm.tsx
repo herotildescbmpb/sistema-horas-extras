@@ -77,9 +77,42 @@ const FIXED_HOLIDAYS: [number, number][] = [
   [1,1],[4,21],[5,1],[9,7],[10,12],[11,2],[11,15],[12,25],
 ];
 
+// Easter calculation (Meeus/Jones/Butcher algorithm)
+function getEaster(year: number): Date {
+  const a = year % 19;
+  const b = Math.floor(year / 100);
+  const c = year % 100;
+  const d = Math.floor(b / 4);
+  const e = b % 4;
+  const f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4);
+  const k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const month = Math.floor((h + l - 7 * m + 114) / 31);
+  const day = ((h + l - 7 * m + 114) % 31) + 1;
+  return new Date(year, month - 1, day);
+}
+
+function getMobileHolidays(year: number): Date[] {
+  const easter = getEaster(year);
+  const addDays = (d: Date, n: number) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+  return [
+    addDays(easter, -48), // Carnaval segunda
+    addDays(easter, -47), // Carnaval terça
+    addDays(easter, -2),  // Sexta-feira Santa
+    easter,               // Páscoa
+    addDays(easter, 60),  // Corpus Christi
+  ];
+}
+
 function isBrazilianHoliday(date: Date): boolean {
   const m = date.getMonth() + 1, d = date.getDate();
-  return FIXED_HOLIDAYS.some(([hm, hd]) => hm === m && hd === d);
+  if (FIXED_HOLIDAYS.some(([hm, hd]) => hm === m && hd === d)) return true;
+  const mobile = getMobileHolidays(date.getFullYear());
+  return mobile.some(h => h.getMonth() === date.getMonth() && h.getDate() === date.getDate());
 }
 
 function getModalidade(dateStr: string): "Especial" | "Extraordinário" | "" {
@@ -128,7 +161,7 @@ const schema = z.object({
   funcao: z.string().min(1, "Função obrigatória"),
   modalidade: z.string().min(1, "Modalidade obrigatória"),
   reason: z.string().min(1, "Justificativa obrigatória"),
-  department: z.string().optional(),
+  department: z.string().min(1, "Setor obrigatório"),
   project: z.string().optional(),
 });
 
@@ -653,22 +686,21 @@ export default function OvertimeForm() {
 
 // ─── Sub-component ────────────────────────────────────────────────────────────
 
-function DepartmentProjectFields({ control, register }: any) {
+function DepartmentProjectFields({ control, register, errors }: any) {
   const { data: departments } = trpc.departments.list.useQuery();
   return (
     <div className="grid grid-cols-2 gap-4">
       <div>
-        <Label className="text-xs font-medium mb-1.5 block">Setor</Label>
+        <Label className="text-xs font-medium mb-1.5 block">Setor *</Label>
         <Controller
           name="department"
           control={control}
           render={({ field }) => (
             <Select onValueChange={field.onChange} value={field.value ?? ""}>
-              <SelectTrigger>
+              <SelectTrigger className={errors?.department ? "border-destructive" : ""}>
                 <SelectValue placeholder="Selecione o setor" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">Nenhum</SelectItem>
                 {departments?.map((d) => (
                   <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
                 ))}
@@ -676,6 +708,7 @@ function DepartmentProjectFields({ control, register }: any) {
             </Select>
           )}
         />
+        {errors?.department && <p className="text-xs text-destructive mt-1">{errors.department.message}</p>}
       </div>
       <div>
         <Label className="text-xs font-medium mb-1.5 block">Projeto</Label>
