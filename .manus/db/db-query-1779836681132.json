@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE `overtime_records` MODIFY COLUMN `startTime` varchar(8) NOT NULL;\nALTER TABLE `overtime_records` MODIFY COLUMN `endTime` varchar(8) NOT NULL;\nALTER TABLE `overtime_records` ADD `tipoEscala` varchar(64);\nALTER TABLE `overtime_records` ADD `servidor` varchar(32);\nALTER TABLE `overtime_records` ADD `endDate` varchar(10);\nALTER TABLE `overtime_records` ADD `funcao` varchar(128);\nALTER TABLE `overtime_records` ADD `modalidade` varchar(64);\nALTER TABLE `users` ADD `matricula` varchar(32);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4XMYXLTg6g9ZctA.83aa4a08e73e --database cDx3jwjHrzRKbmDZmbrJYX --execute ALTER TABLE `overtime_records` MODIFY COLUMN `startTime` varchar(8) NOT NULL;\nALTER TABLE `overtime_records` MODIFY COLUMN `endTime` varchar(8) NOT NULL;\nALTER TABLE `overtime_records` ADD `tipoEscala` varchar(64);\nALTER TABLE `overtime_records` ADD `servidor` varchar(32);\nALTER TABLE `overtime_records` ADD `endDate` varchar(10);\nALTER TABLE `overtime_records` ADD `funcao` varchar(128);\nALTER TABLE `overtime_records` ADD `modalidade` varchar(64);\nALTER TABLE `users` ADD `matricula` varchar(32);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1494
+}

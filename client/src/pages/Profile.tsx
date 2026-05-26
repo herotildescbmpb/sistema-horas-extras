@@ -19,6 +19,7 @@ const schema = z.object({
   department: z.string().optional(),
   position: z.string().optional(),
   hourlyRate: z.string().optional(),
+  matricula: z.string().optional(),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -39,6 +40,7 @@ export default function Profile() {
       department: user?.department ?? "",
       position: user?.position ?? "",
       hourlyRate: user?.hourlyRate ?? "",
+      matricula: (user as any)?.matricula ?? "",
     },
   });
 
@@ -49,6 +51,7 @@ export default function Profile() {
         department: user.department ?? "",
         position: user.position ?? "",
         hourlyRate: user.hourlyRate ?? "",
+        matricula: (user as any)?.matricula ?? "",
       });
     }
   }, [user, reset]);
@@ -157,19 +160,33 @@ export default function Profile() {
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="hourlyRate" className="text-xs font-medium">Valor por Hora (R$)</Label>
-              <Input
-                id="hourlyRate"
-                type="number"
-                step="0.01"
-                {...register("hourlyRate")}
-                className="h-10"
-                placeholder="Ex: 35.00"
-              />
-              <p className="text-xs text-muted-foreground">
-                Utilizado para calcular o valor estimado das horas extras no dashboard
-              </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="hourlyRate" className="text-xs font-medium">Valor por Hora (R$)</Label>
+                <Input
+                  id="hourlyRate"
+                  type="number"
+                  step="0.01"
+                  {...register("hourlyRate")}
+                  className="h-10"
+                  placeholder="Ex: 35.00"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Utilizado para calcular o valor estimado das horas extras
+                </p>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="matricula" className="text-xs font-medium">Matrícula (Servidor)</Label>
+                <Input
+                  id="matricula"
+                  {...register("matricula")}
+                  className="h-10"
+                  placeholder="Ex: 527352"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Número de matrícula funcional do servidor
+                </p>
+              </div>
             </div>
 
             <div className="flex justify-end pt-2">

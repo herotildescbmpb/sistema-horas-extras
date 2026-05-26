@@ -75,6 +75,7 @@ export const appRouter = router({
           department: z.string().optional(),
           position: z.string().optional(),
           hourlyRate: z.string().optional(),
+          matricula: z.string().optional(),
         })
       )
       .mutation(({ ctx, input }) => {
@@ -121,9 +122,13 @@ export const appRouter = router({
     create: protectedProcedure
       .input(
         z.object({
+          tipoEscala: z.string().optional(),
           date: z.string(),
+          endDate: z.string().optional(),
           startTime: z.string(),
           endTime: z.string(),
+          funcao: z.string().optional(),
+          modalidade: z.string().optional(),
           dayType: z.enum(["weekday", "saturday", "sunday_holiday"]),
           reason: z.string().optional(),
           project: z.string().optional(),
@@ -133,11 +138,18 @@ export const appRouter = router({
       .mutation(({ ctx, input }) => {
         const totalMinutes = calcMinutes(input.startTime, input.endTime);
         const multiplier = MULTIPLIERS[input.dayType];
+        // servidor = matricula do usuário logado (preenchida automaticamente)
+        const servidor = (ctx.user as any).matricula ?? undefined;
         return createOvertimeRecord({
           userId: ctx.user.id,
+          tipoEscala: input.tipoEscala,
+          servidor,
           date: input.date,
+          endDate: input.endDate,
           startTime: input.startTime,
           endTime: input.endTime,
+          funcao: input.funcao ?? (ctx.user as any).position ?? undefined,
+          modalidade: input.modalidade,
           totalMinutes,
           dayType: input.dayType,
           multiplier,
@@ -151,9 +163,13 @@ export const appRouter = router({
       .input(
         z.object({
           id: z.number(),
+          tipoEscala: z.string().optional(),
           date: z.string().optional(),
+          endDate: z.string().optional(),
           startTime: z.string().optional(),
           endTime: z.string().optional(),
+          funcao: z.string().optional(),
+          modalidade: z.string().optional(),
           dayType: z.enum(["weekday", "saturday", "sunday_holiday"]).optional(),
           reason: z.string().optional(),
           project: z.string().optional(),
@@ -244,24 +260,23 @@ export const appRouter = router({
           });
         }
 
-        const header = "Data,Início,Fim,Horas,Tipo,Multiplicador,Projeto,Setor,Status,Motivo";
-        const dayTypeLabel: Record<string, string> = {
-          weekday: "Dia Útil",
-          saturday: "Sábado",
-          sunday_holiday: "Dom/Feriado",
-        };
-        const statusLabel: Record<string, string> = {
-          pending: "Pendente",
-          approved: "Aprovado",
-          rejected: "Rejeitado",
-        };
-
+        // Formato compatível com o CSV de escalas original
+        const header = "Tipo de Escala;Servidor;Data Início;Hora Início:;Data Final;Hora Fim:;Função;Modalidade;Status;Horas;Multiplicador;Projeto;Setor;Motivo;Funcionário";
         const rows = records.map((r) => {
-          const hours = (r.totalMinutes / 60).toFixed(2);
-          const dt = dayTypeLabel[r.dayType] ?? r.dayType;
+          const rec = r as any;
+          const servidor = rec.servidor ?? rec.userMatricula ?? "";
+          const funcao = rec.funcao ?? rec.userDepartment ?? "";
+          const endDate = rec.endDate ?? r.date;
+          const motivo = (r.reason ?? "").replace(/;/g, ",");
+          const statusLabel: Record<string, string> = { pending: "Pendente", approved: "Aprovado", rejected: "Rejeitado" };
           const st = statusLabel[r.status] ?? r.status;
-          const reason = (r.reason ?? "").replace(/,/g, ";");
-          return `${r.date},${r.startTime},${r.endTime},${hours},${dt},${r.multiplier}x,${r.project ?? ""},${r.department ?? ""},${st},${reason}`;
+          const hours = (r.totalMinutes / 60).toFixed(2).replace(".", ",");
+          const startFmt = r.startTime.length === 5 ? r.startTime + ":00" : r.startTime;
+          const endFmt = r.endTime.length === 5 ? r.endTime + ":00" : r.endTime;
+          const dateFmt = r.date.split("-").reverse().join("/");
+          const endDateFmt = endDate.split("-").reverse().join("/");
+          const userName = rec.userName ?? "";
+          return `${rec.tipoEscala ?? ""};${servidor};${dateFmt};${startFmt};${endDateFmt};${endFmt};${funcao};${rec.modalidade ?? ""};${st};${hours};${r.multiplier}x;${r.project ?? ""};${r.department ?? ""};${motivo};${userName}`;
         });
 
         return { csv: [header, ...rows].join("\n"), count: records.length };

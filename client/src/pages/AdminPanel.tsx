@@ -247,6 +247,11 @@ export default function AdminPanel() {
                       <span className="text-sm font-semibold text-foreground">
                         {record.userName ?? "Funcionário"}
                       </span>
+                      {record.userMatricula && (
+                        <span className="text-xs font-mono text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded">
+                          {record.userMatricula}
+                        </span>
+                      )}
                       {record.userDepartment && (
                         <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded-md">
                           {record.userDepartment}
@@ -254,6 +259,9 @@ export default function AdminPanel() {
                       )}
                     </div>
                     <div className="flex items-center gap-2 flex-wrap">
+                      {record.tipoEscala && (
+                        <span className="text-xs font-bold text-foreground">{record.tipoEscala}</span>
+                      )}
                       <span className="text-xs text-muted-foreground">
                         {format(new Date(record.date + "T12:00:00"), "dd/MM/yyyy")}
                       </span>
@@ -262,6 +270,18 @@ export default function AdminPanel() {
                         {record.startTime} – {record.endTime} ({formatMinutes(record.totalMinutes)})
                       </span>
                       <DayTypeBadge type={record.dayType} />
+                      {record.funcao && (
+                        <>
+                          <span className="text-muted-foreground/40">·</span>
+                          <span className="text-xs text-muted-foreground">{record.funcao}</span>
+                        </>
+                      )}
+                      {record.modalidade && (
+                        <>
+                          <span className="text-muted-foreground/40">·</span>
+                          <span className="text-xs font-medium text-muted-foreground">{record.modalidade}</span>
+                        </>
+                      )}
                       {record.project && (
                         <>
                           <span className="text-muted-foreground/40">·</span>

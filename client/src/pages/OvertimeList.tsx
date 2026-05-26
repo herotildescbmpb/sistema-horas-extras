@@ -218,6 +218,9 @@ export default function OvertimeList() {
                   {/* Info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
+                      {(record as any).tipoEscala && (
+                        <span className="text-xs font-bold text-foreground">{(record as any).tipoEscala}</span>
+                      )}
                       <span className="text-sm font-semibold text-foreground">
                         {record.startTime} – {record.endTime}
                       </span>
@@ -228,12 +231,24 @@ export default function OvertimeList() {
                       <DayTypeBadge type={record.dayType} />
                     </div>
                     <div className="flex items-center gap-2 flex-wrap">
+                      {(record as any).funcao && (
+                        <span className="text-xs text-muted-foreground">{(record as any).funcao}</span>
+                      )}
+                      {(record as any).modalidade && (
+                        <>
+                          {(record as any).funcao && <span className="text-muted-foreground/40">·</span>}
+                          <span className="text-xs font-medium text-muted-foreground">{(record as any).modalidade}</span>
+                        </>
+                      )}
                       {record.project && (
-                        <span className="text-xs text-muted-foreground">{record.project}</span>
+                        <>
+                          <span className="text-muted-foreground/40">·</span>
+                          <span className="text-xs text-muted-foreground">{record.project}</span>
+                        </>
                       )}
                       {record.department && (
                         <>
-                          {record.project && <span className="text-muted-foreground/40">·</span>}
+                          <span className="text-muted-foreground/40">·</span>
                           <span className="text-xs text-muted-foreground">{record.department}</span>
                         </>
                       )}

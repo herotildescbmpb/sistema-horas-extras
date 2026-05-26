@@ -34,3 +34,14 @@
 
 ## Testes
 - [x] Escrever testes Vitest para routers principais (9 testes passando)
+
+## Adaptação para campos do CSV de Escalas
+- [x] Adicionar colunas no schema: `tipoEscala`, `servidor` (matrícula), `endDate`, `funcao`, `modalidade`
+- [x] Gerar e aplicar migration SQL via webdev_execute_sql
+- [x] Atualizar queries em server/db.ts para incluir novos campos
+- [x] Atualizar routers tRPC (create, update, list, export)
+- [x] Atualizar formulário de cadastro com todos os novos campos
+- [x] Atualizar listagem para exibir matrícula, tipo de escala, função e modalidade
+- [x] Atualizar exportação CSV para incluir todos os campos do CSV original
+- [x] Adicionar campo matrícula no perfil do usuário
+- [x] Atualizar testes Vitest para cobrir novos campos

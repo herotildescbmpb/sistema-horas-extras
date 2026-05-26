@@ -19,6 +19,7 @@ export const users = mysqlTable("users", {
   department: varchar("department", { length: 128 }),
   position: varchar("position", { length: 128 }),
   hourlyRate: decimal("hourlyRate", { precision: 10, scale: 2 }),
+  matricula: varchar("matricula", { length: 32 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
@@ -41,9 +42,14 @@ export type InsertDepartment = typeof departments.$inferInsert;
 export const overtimeRecords = mysqlTable("overtime_records", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
-  date: varchar("date", { length: 10 }).notNull(), // YYYY-MM-DD
-  startTime: varchar("startTime", { length: 5 }).notNull(), // HH:MM
-  endTime: varchar("endTime", { length: 5 }).notNull(), // HH:MM
+  tipoEscala: varchar("tipoEscala", { length: 64 }), // Ex: Expediente, Plantão
+  servidor: varchar("servidor", { length: 32 }), // Matrícula do servidor (preenchida automaticamente)
+  date: varchar("date", { length: 10 }).notNull(), // YYYY-MM-DD (Data Início)
+  endDate: varchar("endDate", { length: 10 }), // YYYY-MM-DD (Data Final - pode ser diferente)
+  startTime: varchar("startTime", { length: 8 }).notNull(), // HH:MM ou HH:MM:SS
+  endTime: varchar("endTime", { length: 8 }).notNull(), // HH:MM ou HH:MM:SS
+  funcao: varchar("funcao", { length: 128 }), // Função do servidor
+  modalidade: varchar("modalidade", { length: 64 }), // Ex: Especial, Normal
   totalMinutes: int("totalMinutes").notNull(),
   dayType: mysqlEnum("dayType", ["weekday", "saturday", "sunday_holiday"]).notNull(),
   multiplier: decimal("multiplier", { precision: 4, scale: 2 }).notNull(), // 1.5, 2.0, 2.0

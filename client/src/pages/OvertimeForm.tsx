@@ -1,4 +1,5 @@
 import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -16,16 +17,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, Clock, Save, Loader2, Info } from "lucide-react";
+import { ArrowLeft, Clock, Save, Loader2, Info, User, Tag, FileText } from "lucide-react";
 import { Link } from "wouter";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
 const schema = z.object({
-  date: z.string().min(1, "Data é obrigatória"),
+  // Campos do CSV de escalas
+  tipoEscala: z.string().optional(),
+  date: z.string().min(1, "Data de início é obrigatória"),
+  endDate: z.string().optional(),
   startTime: z.string().min(1, "Hora de início é obrigatória"),
   endTime: z.string().min(1, "Hora de fim é obrigatória"),
+  funcao: z.string().optional(),
+  modalidade: z.string().optional(),
+  // Campos complementares
   dayType: z.enum(["weekday", "saturday", "sunday_holiday"]),
   reason: z.string().optional(),
   project: z.string().optional(),
@@ -40,12 +46,29 @@ const dayTypeLabels = {
   sunday_holiday: { label: "Domingo / Feriado", multiplier: "2,0×", color: "text-orange-600" },
 };
 
+const TIPO_ESCALA_OPTIONS = [
+  "Expediente",
+  "Plantão",
+  "Sobreaviso",
+  "Hora Extra",
+  "Trabalho Noturno",
+  "Outro",
+];
+
+const MODALIDADE_OPTIONS = [
+  "Especial",
+  "Normal",
+  "Remoto",
+  "Presencial",
+  "Híbrido",
+];
+
 function calcMinutes(start: string, end: string): number {
   if (!start || !end) return 0;
   const [sh, sm] = start.split(":").map(Number);
   const [eh, em] = end.split(":").map(Number);
-  let startTotal = sh * 60 + sm;
-  let endTotal = eh * 60 + em;
+  let startTotal = sh * 60 + (sm || 0);
+  let endTotal = eh * 60 + (em || 0);
   if (endTotal <= startTotal) endTotal += 24 * 60;
   return endTotal - startTotal;
 }
@@ -65,6 +88,7 @@ interface OvertimeFormProps {
 export default function OvertimeForm({ editId }: OvertimeFormProps) {
   const [, navigate] = useLocation();
   const utils = trpc.useUtils();
+  const { user } = useAuth();
   const isEdit = !!editId;
 
   const { data: departments } = trpc.departments.list.useQuery();
@@ -85,16 +109,24 @@ export default function OvertimeForm({ editId }: OvertimeFormProps) {
     resolver: zodResolver(schema),
     defaultValues: {
       date: format(new Date(), "yyyy-MM-dd"),
+      endDate: format(new Date(), "yyyy-MM-dd"),
       dayType: "weekday",
+      tipoEscala: "Expediente",
+      modalidade: "Especial",
+      funcao: (user as any)?.position ?? "",
     },
   });
 
   useEffect(() => {
     if (existingRecord) {
       reset({
+        tipoEscala: (existingRecord as any).tipoEscala ?? "Expediente",
         date: existingRecord.date,
+        endDate: (existingRecord as any).endDate ?? existingRecord.date,
         startTime: existingRecord.startTime,
         endTime: existingRecord.endTime,
+        funcao: (existingRecord as any).funcao ?? "",
+        modalidade: (existingRecord as any).modalidade ?? "Especial",
         dayType: existingRecord.dayType,
         reason: existingRecord.reason ?? "",
         project: existingRecord.project ?? "",
@@ -102,6 +134,13 @@ export default function OvertimeForm({ editId }: OvertimeFormProps) {
       });
     }
   }, [existingRecord, reset]);
+
+  // Auto-fill funcao from user profile
+  useEffect(() => {
+    if (!isEdit && user && (user as any).position) {
+      setValue("funcao", (user as any).position);
+    }
+  }, [user, isEdit, setValue]);
 
   const startTime = watch("startTime");
   const endTime = watch("endTime");
@@ -114,10 +153,10 @@ export default function OvertimeForm({ editId }: OvertimeFormProps) {
     onSuccess: () => {
       utils.overtime.list.invalidate();
       utils.reports.monthSummary.invalidate();
-      toast.success("Horas extras registradas com sucesso!");
+      toast.success("Escala registrada com sucesso!");
       navigate("/horas");
     },
-    onError: (err) => toast.error(err.message || "Erro ao registrar horas extras"),
+    onError: (err) => toast.error(err.message || "Erro ao registrar escala"),
   });
 
   const updateMutation = trpc.overtime.update.useMutation({
@@ -146,6 +185,8 @@ export default function OvertimeForm({ editId }: OvertimeFormProps) {
     );
   }
 
+  const userMatricula = (user as any)?.matricula;
+
   return (
     <div className="p-6 lg:p-8 max-w-2xl mx-auto">
       {/* Header */}
@@ -157,27 +198,102 @@ export default function OvertimeForm({ editId }: OvertimeFormProps) {
         </Button>
         <div>
           <h1 className="text-xl font-bold text-foreground">
-            {isEdit ? "Editar Registro" : "Novo Registro de Horas Extras"}
+            {isEdit ? "Editar Registro" : "Novo Registro de Escala / Horas Extras"}
           </h1>
           <p className="text-sm text-muted-foreground">
-            {isEdit ? "Atualize as informações do registro" : "Preencha os dados das horas extras realizadas"}
+            {isEdit ? "Atualize as informações do registro" : "Preencha os dados conforme a escala realizada"}
           </p>
         </div>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        {/* Date & Time */}
+
+        {/* Servidor info (read-only) */}
+        {userMatricula && (
+          <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-muted/40 border border-border/50">
+            <User className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+            <span className="text-xs text-muted-foreground">
+              Servidor: <span className="font-semibold text-foreground">{userMatricula}</span>
+              {user?.name && <> — {user.name}</>}
+            </span>
+          </div>
+        )}
+
+        {/* Tipo de Escala e Modalidade */}
+        <Card className="shadow-sm border-border/60">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              <Tag className="w-4 h-4 text-primary" />
+              Tipo de Escala
+            </CardTitle>
+            <CardDescription className="text-xs">Classificação da escala conforme o sistema</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium">Tipo de Escala</Label>
+                <Select
+                  value={watch("tipoEscala") ?? ""}
+                  onValueChange={(v) => setValue("tipoEscala", v)}
+                >
+                  <SelectTrigger className="h-10">
+                    <SelectValue placeholder="Selecione o tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TIPO_ESCALA_OPTIONS.map((opt) => (
+                      <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium">Modalidade</Label>
+                <Select
+                  value={watch("modalidade") ?? ""}
+                  onValueChange={(v) => setValue("modalidade", v)}
+                >
+                  <SelectTrigger className="h-10">
+                    <SelectValue placeholder="Selecione a modalidade" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {MODALIDADE_OPTIONS.map((opt) => (
+                      <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="funcao" className="text-xs font-medium">Função</Label>
+              <Input
+                id="funcao"
+                placeholder="Ex: Auxiliar Administrativo, Analista"
+                {...register("funcao")}
+                className="h-10"
+              />
+              <p className="text-xs text-muted-foreground">
+                Preenchida automaticamente com o cargo do perfil
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Data e Horário */}
         <Card className="shadow-sm border-border/60">
           <CardHeader className="pb-4">
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
               <Clock className="w-4 h-4 text-primary" />
               Data e Horário
             </CardTitle>
+            <CardDescription className="text-xs">
+              Período da escala — Data Início, Hora Início, Data Final e Hora Fim
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label htmlFor="date" className="text-xs font-medium">Data *</Label>
+                <Label htmlFor="date" className="text-xs font-medium">Data Início *</Label>
                 <Input id="date" type="date" {...register("date")} className="h-10" />
                 {errors.date && <p className="text-xs text-destructive">{errors.date.message}</p>}
               </div>
@@ -185,6 +301,11 @@ export default function OvertimeForm({ editId }: OvertimeFormProps) {
                 <Label htmlFor="startTime" className="text-xs font-medium">Hora Início *</Label>
                 <Input id="startTime" type="time" {...register("startTime")} className="h-10" />
                 {errors.startTime && <p className="text-xs text-destructive">{errors.startTime.message}</p>}
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="endDate" className="text-xs font-medium">Data Final</Label>
+                <Input id="endDate" type="date" {...register("endDate")} className="h-10" />
+                <p className="text-xs text-muted-foreground">Deixe igual à data início se for no mesmo dia</p>
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="endTime" className="text-xs font-medium">Hora Fim *</Label>
@@ -210,7 +331,7 @@ export default function OvertimeForm({ editId }: OvertimeFormProps) {
           </CardContent>
         </Card>
 
-        {/* Type & Classification */}
+        {/* Classificação */}
         <Card className="shadow-sm border-border/60">
           <CardHeader className="pb-4">
             <CardTitle className="text-sm font-semibold">Classificação</CardTitle>
@@ -267,17 +388,20 @@ export default function OvertimeForm({ editId }: OvertimeFormProps) {
           </CardContent>
         </Card>
 
-        {/* Reason */}
+        {/* Justificativa */}
         <Card className="shadow-sm border-border/60">
           <CardHeader className="pb-4">
-            <CardTitle className="text-sm font-semibold">Justificativa</CardTitle>
+            <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              <FileText className="w-4 h-4 text-primary" />
+              Justificativa
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-1.5">
               <Label htmlFor="reason" className="text-xs font-medium">Motivo / Descrição</Label>
               <Textarea
                 id="reason"
-                placeholder="Descreva o motivo das horas extras realizadas..."
+                placeholder="Descreva o motivo da escala ou horas extras realizadas..."
                 rows={3}
                 {...register("reason")}
                 className="resize-none"
@@ -294,14 +418,14 @@ export default function OvertimeForm({ editId }: OvertimeFormProps) {
           <Button
             type="submit"
             disabled={isSubmitting || createMutation.isPending || updateMutation.isPending}
-            className="gap-2 min-w-32"
+            className="gap-2 min-w-36"
           >
             {(isSubmitting || createMutation.isPending || updateMutation.isPending) ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
               <Save className="w-4 h-4" />
             )}
-            {isEdit ? "Salvar Alterações" : "Registrar Horas"}
+            {isEdit ? "Salvar Alterações" : "Registrar Escala"}
           </Button>
         </div>
       </form>

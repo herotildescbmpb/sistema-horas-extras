@@ -76,7 +76,7 @@ export async function getAllUsers() {
 
 export async function updateUserProfile(
   userId: number,
-  data: { name?: string; department?: string; position?: string; hourlyRate?: string }
+  data: { name?: string; department?: string; position?: string; hourlyRate?: string; matricula?: string }
 ) {
   const db = await getDb();
   if (!db) return;
@@ -158,9 +158,14 @@ export async function getAllOvertimeRecords(filters?: {
     .select({
       id: overtimeRecords.id,
       userId: overtimeRecords.userId,
+      tipoEscala: overtimeRecords.tipoEscala,
+      servidor: overtimeRecords.servidor,
       date: overtimeRecords.date,
+      endDate: overtimeRecords.endDate,
       startTime: overtimeRecords.startTime,
       endTime: overtimeRecords.endTime,
+      funcao: overtimeRecords.funcao,
+      modalidade: overtimeRecords.modalidade,
       totalMinutes: overtimeRecords.totalMinutes,
       dayType: overtimeRecords.dayType,
       multiplier: overtimeRecords.multiplier,
@@ -176,6 +181,7 @@ export async function getAllOvertimeRecords(filters?: {
       userName: users.name,
       userEmail: users.email,
       userDepartment: users.department,
+      userMatricula: users.matricula,
     })
     .from(overtimeRecords)
     .leftJoin(users, eq(overtimeRecords.userId, users.id))
