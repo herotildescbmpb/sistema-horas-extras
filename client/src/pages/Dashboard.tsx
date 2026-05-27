@@ -103,7 +103,7 @@ export default function Dashboard() {
             suffix="registros"
           />
           <StatCard
-            title="Funcionários Ativos"
+            title="Servidores Ativos"
             value={loadingAdmin ? null : String(adminSummary?.employeeCount ?? 0)}
             icon={Users}
             iconColor="text-blue-600"
