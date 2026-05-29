@@ -12,12 +12,20 @@ vi.mock("./db", () => ({
   deleteOvertimeRecord: vi.fn().mockResolvedValue(undefined),
   reviewOvertimeRecord: vi.fn().mockResolvedValue(undefined),
   getDepartments: vi.fn().mockResolvedValue([]),
+  getDepartmentsWithChefe: vi.fn().mockResolvedValue([]),
   getAllUsers: vi.fn().mockResolvedValue([]),
+  getUserById: vi.fn().mockResolvedValue(null),
   getMonthSummary: vi.fn().mockResolvedValue({ totalMinutes: 0, approvedMinutes: 0, pendingCount: 0, rejectedCount: 0 }),
   getAdminMonthSummary: vi.fn().mockResolvedValue({ totalMinutes: 0, pendingCount: 0, employeeCount: 0 }),
   updateUserProfile: vi.fn().mockResolvedValue(undefined),
   setUserRole: vi.fn().mockResolvedValue(undefined),
+  adminUpdateUser: vi.fn().mockResolvedValue(undefined),
+  setUserActive: vi.fn().mockResolvedValue(undefined),
+  setDepartmentChefe: vi.fn().mockResolvedValue(undefined),
+  updateDepartment: vi.fn().mockResolvedValue(undefined),
   createDepartment: vi.fn().mockResolvedValue(undefined),
+  searchServidores: vi.fn().mockResolvedValue([]),
+  getServidorByMatricula: vi.fn().mockResolvedValue(null),
   upsertUser: vi.fn().mockResolvedValue(undefined),
   getUserByOpenId: vi.fn().mockResolvedValue(undefined),
 }));
@@ -264,5 +272,88 @@ describe("overtime.create with CSV fields", () => {
     expect(result.csv).toContain("527352");
     expect(result.csv).toContain("Analista");
     expect(result.csv).toContain("Especial");
+  });
+});
+
+// ─── Admin Users tests ────────────────────────────────────────────────────────
+describe("users.adminUpdate", () => {
+  it("allows admin to update another user's data", async () => {
+    const { adminUpdateUser } = await import("./db");
+    const ctx = makeCtx("admin");
+    const caller = appRouter.createCaller(ctx);
+
+    await caller.users.adminUpdate({
+      userId: 2,
+      name: "Novo Nome",
+      department: "DAL/1",
+      role: "user",
+    });
+
+    expect(adminUpdateUser).toHaveBeenCalledWith(2, expect.objectContaining({
+      name: "Novo Nome",
+      department: "DAL/1",
+      role: "user",
+    }));
+  });
+
+  it("throws FORBIDDEN when non-admin tries to call adminUpdate", async () => {
+    const ctx = makeCtx("user");
+    const caller = appRouter.createCaller(ctx);
+
+    await expect(
+      caller.users.adminUpdate({ userId: 2, name: "Hack" })
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+});
+
+describe("users.setActive", () => {
+  it("allows admin to deactivate a user", async () => {
+    const { setUserActive } = await import("./db");
+    const ctx = makeCtx("admin");
+    const caller = appRouter.createCaller(ctx);
+
+    await caller.users.setActive({ userId: 3, isActive: false });
+
+    expect(setUserActive).toHaveBeenCalledWith(3, false);
+  });
+
+  it("throws FORBIDDEN when non-admin tries to setActive", async () => {
+    const ctx = makeCtx("user");
+    const caller = appRouter.createCaller(ctx);
+
+    await expect(
+      caller.users.setActive({ userId: 3, isActive: false })
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+});
+
+describe("departments.setChefe", () => {
+  it("allows admin to set a department chief", async () => {
+    const { setDepartmentChefe } = await import("./db");
+    const ctx = makeCtx("admin");
+    const caller = appRouter.createCaller(ctx);
+
+    await caller.departments.setChefe({ departmentId: 1, chefeId: 5 });
+
+    expect(setDepartmentChefe).toHaveBeenCalledWith(1, 5);
+  });
+
+  it("allows admin to remove a department chief (null)", async () => {
+    const { setDepartmentChefe } = await import("./db");
+    const ctx = makeCtx("admin");
+    const caller = appRouter.createCaller(ctx);
+
+    await caller.departments.setChefe({ departmentId: 1, chefeId: null });
+
+    expect(setDepartmentChefe).toHaveBeenCalledWith(1, null);
+  });
+
+  it("throws FORBIDDEN when non-admin tries to setChefe", async () => {
+    const ctx = makeCtx("user");
+    const caller = appRouter.createCaller(ctx);
+
+    await expect(
+      caller.departments.setChefe({ departmentId: 1, chefeId: 5 })
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 });

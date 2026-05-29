@@ -62,3 +62,17 @@
 - [x] Todos os campos obrigatórios para salvar
 - [x] Exibir horas do registro em andamento (calculado em tempo real)
 - [x] Exibir total de horas já registradas no mês correspondente
+
+## Setores DAL/CBMPB e Gerenciamento de Usuários
+- [x] Inserir os 7 setores do PCA DAL/CBMPB no banco (substituindo setores genéricos)
+- [x] Adicionar coluna `chefe_id` na tabela departments (FK para users)
+- [x] Adicionar coluna `department` e `status` na tabela users
+- [x] Criar migration e aplicar via webdev_execute_sql
+- [x] Atualizar router departments: listar com chefe, atribuir/remover chefe
+- [x] Criar router admin.users: listar, criar convite/pré-cadastro, editar, ativar/desativar, redefinir senha
+- [x] Criar página AdminUsers completa com tabela (Nome, E-mail, Setor, Perfil, Status, Ações)
+- [x] Criar modal de cadastro de novo usuário (Nome, E-mail, Setor, Perfil)
+- [x] Criar modal de edição de usuário existente
+- [x] Criar funcionalidade de redefinição de senha pelo admin
+- [x] Criar página AdminDepartments com lista de setores e atribuição de chefe
+- [x] Atualizar AppLayout com novos itens de navegação

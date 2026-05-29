@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE `departments` ADD `shortName` varchar(32);\nALTER TABLE `departments` ADD `chefeId` int;\nALTER TABLE `users` ADD `isActive` boolean DEFAULT true NOT NULL;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4XMYXLTg6g9ZctA.83aa4a08e73e --database cDx3jwjHrzRKbmDZmbrJYX --execute ALTER TABLE `departments` ADD `shortName` varchar(32);\nALTER TABLE `departments` ADD `chefeId` int;\nALTER TABLE `users` ADD `isActive` boolean DEFAULT true NOT NULL;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 783
+}

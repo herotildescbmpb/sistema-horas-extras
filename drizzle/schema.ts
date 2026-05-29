@@ -16,6 +16,7 @@ export const users = mysqlTable("users", {
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
   role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
+  isActive: boolean("isActive").default(true).notNull(),
   department: varchar("department", { length: 128 }),
   position: varchar("position", { length: 128 }),
   hourlyRate: decimal("hourlyRate", { precision: 10, scale: 2 }),
@@ -31,7 +32,9 @@ export type InsertUser = typeof users.$inferInsert;
 export const departments = mysqlTable("departments", {
   id: int("id").autoincrement().primaryKey(),
   name: varchar("name", { length: 128 }).notNull(),
+  shortName: varchar("shortName", { length: 32 }),
   description: text("description"),
+  chefeId: int("chefeId"),  // FK para users.id
   active: boolean("active").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });

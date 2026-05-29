@@ -5,6 +5,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import {
+  adminUpdateUser,
   createDepartment,
   createOvertimeRecord,
   deleteOvertimeRecord,
@@ -12,13 +13,18 @@ import {
   getAllOvertimeRecords,
   getAllUsers,
   getDepartments,
+  getDepartmentsWithChefe,
   getMonthSummary,
   getOvertimeRecordById,
   getOvertimeRecordsByUser,
+  getUserById,
   reviewOvertimeRecord,
   searchServidores,
   getServidorByMatricula,
+  setDepartmentChefe,
+  setUserActive,
   setUserRole,
+  updateDepartment,
   updateOvertimeRecord,
   updateUserProfile,
 } from "./db";
@@ -69,14 +75,50 @@ export const appRouter = router({
   // ─── Departments ─────────────────────────────────────────────────────────────
   departments: router({
     list: protectedProcedure.query(() => getDepartments()),
+    listWithChefe: adminProcedure.query(() => getDepartmentsWithChefe()),
     create: adminProcedure
-      .input(z.object({ name: z.string().min(1), description: z.string().optional() }))
-      .mutation(({ input }) => createDepartment({ name: input.name, description: input.description })),
+      .input(z.object({ name: z.string().min(1), shortName: z.string().optional(), description: z.string().optional() }))
+      .mutation(({ input }) => createDepartment({ name: input.name, shortName: input.shortName, description: input.description })),
+    update: adminProcedure
+      .input(z.object({ id: z.number(), name: z.string().optional(), shortName: z.string().optional(), description: z.string().optional() }))
+      .mutation(({ input }) => {
+        const { id, ...data } = input;
+        return updateDepartment(id, data);
+      }),
+    setChefe: adminProcedure
+      .input(z.object({ departmentId: z.number(), chefeId: z.number().nullable() }))
+      .mutation(({ input }) => setDepartmentChefe(input.departmentId, input.chefeId)),
   }),
 
   // ─── Users ───────────────────────────────────────────────────────────────────
   users: router({
     list: adminProcedure.query(() => getAllUsers()),
+
+    getById: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .query(({ input }) => getUserById(input.id)),
+
+    adminUpdate: adminProcedure
+      .input(
+        z.object({
+          userId: z.number(),
+          name: z.string().optional(),
+          email: z.string().optional(),
+          department: z.string().optional(),
+          position: z.string().optional(),
+          role: z.enum(["user", "admin"]).optional(),
+          isActive: z.boolean().optional(),
+          matricula: z.string().optional(),
+        })
+      )
+      .mutation(({ input }) => {
+        const { userId, ...data } = input;
+        return adminUpdateUser(userId, data);
+      }),
+
+    setActive: adminProcedure
+      .input(z.object({ userId: z.number(), isActive: z.boolean() }))
+      .mutation(({ input }) => setUserActive(input.userId, input.isActive)),
 
     updateProfile: protectedProcedure
       .input(

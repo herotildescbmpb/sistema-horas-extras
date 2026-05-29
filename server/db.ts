@@ -76,6 +76,28 @@ export async function getAllUsers() {
   return db.select().from(users).orderBy(users.name);
 }
 
+export async function getUserById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
+  return result[0];
+}
+
+export async function setUserActive(userId: number, isActive: boolean) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(users).set({ isActive }).where(eq(users.id, userId));
+}
+
+export async function adminUpdateUser(
+  userId: number,
+  data: { name?: string; email?: string; department?: string; position?: string; role?: "user" | "admin"; isActive?: boolean; matricula?: string }
+) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(users).set(data).where(eq(users.id, userId));
+}
+
 export async function updateUserProfile(
   userId: number,
   data: { name?: string; department?: string; position?: string; hourlyRate?: string; matricula?: string }
@@ -122,13 +144,48 @@ export async function getServidorByMatricula(matricula: string) {
 export async function getDepartments() {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(departments).where(eq(departments.active, true)).orderBy(departments.name);
+  return db.select().from(departments).where(eq(departments.active, true)).orderBy(departments.id);
+}
+
+export async function getDepartmentsWithChefe() {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db
+    .select({
+      id: departments.id,
+      name: departments.name,
+      shortName: departments.shortName,
+      description: departments.description,
+      chefeId: departments.chefeId,
+      active: departments.active,
+      createdAt: departments.createdAt,
+      chefeName: users.name,
+      chefeEmail: users.email,
+      chefePosition: users.position,
+    })
+    .from(departments)
+    .leftJoin(users, eq(departments.chefeId, users.id))
+    .where(eq(departments.active, true))
+    .orderBy(departments.id);
+  return rows;
+}
+
+export async function setDepartmentChefe(departmentId: number, chefeId: number | null) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(departments).set({ chefeId }).where(eq(departments.id, departmentId));
 }
 
 export async function createDepartment(data: InsertDepartment) {
   const db = await getDb();
   if (!db) return;
   await db.insert(departments).values(data);
+}
+
+export async function updateDepartment(id: number, data: Partial<InsertDepartment>) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(departments).set(data).where(eq(departments.id, id));
 }
 
 // ─── Overtime Records ─────────────────────────────────────────────────────────
