@@ -15,12 +15,14 @@ import Profile from "./pages/Profile";
 import EscalaList from "./pages/EscalaList";
 import EscalaWizard from "./pages/EscalaWizard";
 import EscalaDetail from "./pages/EscalaDetail";
+import NovoRegistro from "./pages/NovoRegistro";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Dashboard} />
       <Route path="/horas" component={OvertimeList} />
+      <Route path="/novo" component={NovoRegistro} />
       <Route path="/horas/novo" component={OvertimeForm} />
       <Route path="/horas/:id/editar" component={OvertimeForm} />
       <Route path="/relatorios" component={Reports} />

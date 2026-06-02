@@ -95,7 +95,7 @@ export default function OvertimeList() {
           </p>
         </div>
         <Button asChild className="gap-2 shadow-sm h-10">
-          <Link href="/horas/novo">
+          <Link href="/novo">
             <Plus className="w-4 h-4" />
             Novo Registro
           </Link>
@@ -192,7 +192,7 @@ export default function OvertimeList() {
                 Tente ajustar os filtros ou registre suas primeiras horas extras
               </p>
               <Button asChild size="sm" className="gap-2">
-                <Link href="/horas/novo">
+                <Link href="/novo">
                   <Plus className="w-3.5 h-3.5" />
                   Novo Registro
                 </Link>

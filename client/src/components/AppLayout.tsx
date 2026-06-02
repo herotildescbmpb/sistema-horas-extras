@@ -42,7 +42,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { label: "Dashboard", href: "/", icon: LayoutDashboard },
   { label: "Minhas Horas", href: "/horas", icon: Clock },
-  { label: "Novo Registro", href: "/horas/novo", icon: ClipboardList },
+  { label: "Novo Registro", href: "/novo", icon: ClipboardList },
   { label: "Escalas em Lote", href: "/escalas", icon: CalendarRange },
   { label: "Relatórios", href: "/relatorios", icon: BarChart3 },
   { label: "Painel Admin", href: "/admin", icon: Shield, adminOnly: true },

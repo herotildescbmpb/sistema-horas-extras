@@ -75,7 +75,7 @@ export default function Dashboard() {
           </p>
         </div>
         <Button asChild className="gap-2 shadow-sm h-10">
-          <Link href="/horas/novo">
+          <Link href="/novo">
             <Plus className="w-4 h-4" />
             Registrar Horas Extras
           </Link>
@@ -181,7 +181,7 @@ export default function Dashboard() {
                   <p className="text-sm font-medium text-foreground">Nenhum registro este mês</p>
                   <p className="text-xs text-muted-foreground mt-1">Comece registrando suas horas extras</p>
                   <Button asChild size="sm" className="mt-4 gap-2">
-                    <Link href="/horas/novo">
+                    <Link href="/novo">
                       <Plus className="w-3.5 h-3.5" />
                       Novo Registro
                     </Link>
@@ -223,7 +223,7 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent className="space-y-2">
               <Button asChild variant="outline" className="w-full justify-start gap-3 h-10 text-sm">
-                <Link href="/horas/novo">
+                <Link href="/novo">
                   <Plus className="w-4 h-4 text-primary" />
                   Novo Registro
                 </Link>
