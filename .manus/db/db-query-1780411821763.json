@@ -1,0 +1,9 @@
+{
+  "query": "INSERT INTO servidores (matricula, digito, posto, nome, funcao) VALUES\n('529584', '0', '1º Tenente', 'Josemildo', 'Auxiliar Administrativo'),\n('525600', '3', '2º Tenente', 'Luzzo', 'Auxiliar Administrativo'),\n('527810', '4', '2º Tenente', 'Eduardo', 'Auxiliar Administrativo'),\n('527819', '8', '2º Sargento', 'Raul', 'Auxiliar Administrativo'),\n('527577', '6', 'Soldado', 'Hellen', 'Auxiliar Administrativo');",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4XMYXLTg6g9ZctA.83aa4a08e73e --database cDx3jwjHrzRKbmDZmbrJYX --execute INSERT INTO servidores (matricula, digito, posto, nome, funcao) VALUES\n('529584', '0', '1º Tenente', 'Josemildo', 'Auxiliar Administrativo'),\n('525600', '3', '2º Tenente', 'Luzzo', 'Auxiliar Administrativo'),\n('527810', '4', '2º Tenente', 'Eduardo', 'Auxiliar Administrativo'),\n('527819', '8', '2º Sargento', 'Raul', 'Auxiliar Administrativo'),\n('527577', '6', 'Soldado', 'Hellen', 'Auxiliar Administrativo');",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 270
+}

@@ -1,0 +1,31 @@
+{
+  "query": "SELECT COUNT(*) as total FROM servidores;\nSELECT matricula, digito, posto, nome, funcao FROM servidores WHERE matricula IN ('529584','525600','527810','527819','527577');",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4XMYXLTg6g9ZctA.83aa4a08e73e --database cDx3jwjHrzRKbmDZmbrJYX --execute SELECT COUNT(*) as total FROM servidores;\nSELECT matricula, digito, posto, nome, funcao FROM servidores WHERE matricula IN ('529584','525600','527810','527819','527577');",
+  "rows": [
+    {
+      "total": "34"
+    },
+    {
+      "total": "matricula\tdigito\tposto\tnome\tfuncao"
+    },
+    {
+      "total": "529584\t0\t1º Tenente\tJosemildo\tAuxiliar Administrativo"
+    },
+    {
+      "total": "525600\t3\t2º Tenente\tLuzzo\tAuxiliar Administrativo"
+    },
+    {
+      "total": "527810\t4\t2º Tenente\tEduardo\tAuxiliar Administrativo"
+    },
+    {
+      "total": "527819\t8\t2º Sargento\tRaul\tAuxiliar Administrativo"
+    },
+    {
+      "total": "527577\t6\tSoldado\tHellen\tAuxiliar Administrativo"
+    }
+  ],
+  "messages": [],
+  "stdout": "total\n34\nmatricula\tdigito\tposto\tnome\tfuncao\n529584\t0\t1º Tenente\tJosemildo\tAuxiliar Administrativo\n525600\t3\t2º Tenente\tLuzzo\tAuxiliar Administrativo\n527810\t4\t2º Tenente\tEduardo\tAuxiliar Administrativo\n527819\t8\t2º Sargento\tRaul\tAuxiliar Administrativo\n527577\t6\tSoldado\tHellen\tAuxiliar Administrativo\n",
+  "stderr": "",
+  "execution_time_ms": 271
+}
