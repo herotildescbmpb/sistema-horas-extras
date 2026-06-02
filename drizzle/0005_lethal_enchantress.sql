@@ -1,0 +1,1 @@
+ALTER TABLE `servidores` ADD `funcao` varchar(64);

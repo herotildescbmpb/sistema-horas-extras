@@ -306,10 +306,12 @@ export default function OvertimeForm() {
     }
   }
 
-  function selectServidor(s: { nome: string; matricula: string; posto?: string | null }) {
+  function selectServidor(s: { nome: string; matricula: string; posto?: string | null; funcao?: string | null }) {
     setValue("servidorNome", s.nome, { shouldValidate: true });
     setValue("matricula", s.matricula, { shouldValidate: true });
     setValue("posto", s.posto ?? "");
+    // Preenche função automaticamente se o servidor tiver função cadastrada
+    if (s.funcao) setValue("funcao", s.funcao, { shouldValidate: true });
     setSearchQuery(s.nome);
     setShowSuggestions(false);
   }

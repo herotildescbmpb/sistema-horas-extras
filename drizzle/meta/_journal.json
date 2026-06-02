@@ -36,6 +36,13 @@
       "when": 1780087625119,
       "tag": "0004_clumsy_quicksilver",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1780411042628,
+      "tag": "0005_lethal_enchantress",
+      "breakpoints": true
     }
   ]
 }

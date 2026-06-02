@@ -1,0 +1,46 @@
+{
+  "query": "SELECT COUNT(*) as total FROM servidores;\nSELECT matricula, digito, posto, nome, funcao FROM servidores ORDER BY posto, nome LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4XMYXLTg6g9ZctA.83aa4a08e73e --database cDx3jwjHrzRKbmDZmbrJYX --execute SELECT COUNT(*) as total FROM servidores;\nSELECT matricula, digito, posto, nome, funcao FROM servidores ORDER BY posto, nome LIMIT 10;",
+  "rows": [
+    {
+      "total": "32"
+    },
+    {
+      "total": "matricula\tdigito\tposto\tnome\tfuncao"
+    },
+    {
+      "total": "520203\t5\t1º Sargento\tSeverino Dos Ramos Cristiano Da Silva\tAuxiliar Administrativo"
+    },
+    {
+      "total": "520016\t4\t1º Sargento\tWlademyr Fraga\tAuxiliar Administrativo"
+    },
+    {
+      "total": "521661\t3\t1º Tenente\tAndrius De Medeiros Gomes\tAuxiliar Administrativo"
+    },
+    {
+      "total": "527356\t1\t1º Tenente\tCinara Fernanda Soares De Sousa Sabino\tChefe"
+    },
+    {
+      "total": "527458\t3\t1º Tenente\tGiselle Ferreira Ribeiro\tChefe"
+    },
+    {
+      "total": "517066\t4\t1º Tenente\tIsrael Ataide Da Fonseca\tChefe"
+    },
+    {
+      "total": "519021\t5\t1º Tenente\tJailton Matias Dos Santos\tAuxiliar Administrativo"
+    },
+    {
+      "total": "527353\t6\t1º Tenente\tPedro Vicente Da Silva\tAuxiliar Administrativo"
+    },
+    {
+      "total": "522155\t2\t1º Tenente\tWaldemar Fabio Oliveira De Arruda\tChefe"
+    },
+    {
+      "total": "523589\t8\t1º Tenente\tWalter Freire Valentim\tAuxiliar Administrativo"
+    }
+  ],
+  "messages": [],
+  "stdout": "total\n32\nmatricula\tdigito\tposto\tnome\tfuncao\n520203\t5\t1º Sargento\tSeverino Dos Ramos Cristiano Da Silva\tAuxiliar Administrativo\n520016\t4\t1º Sargento\tWlademyr Fraga\tAuxiliar Administrativo\n521661\t3\t1º Tenente\tAndrius De Medeiros Gomes\tAuxiliar Administrativo\n527356\t1\t1º Tenente\tCinara Fernanda Soares De Sousa Sabino\tChefe\n527458\t3\t1º Tenente\tGiselle Ferreira Ribeiro\tChefe\n517066\t4\t1º Tenente\tIsrael Ataide Da Fonseca\tChefe\n519021\t5\t1º Tenente\tJailton Matias Dos Santos\tAuxiliar Administrativo\n527353\t6\t1º Tenente\tPedro Vicente Da Silva\tAuxiliar Administrativo\n522155\t2\t1º Tenente\tWaldemar Fabio Oliveira De Arruda\tChefe\n523589\t8\t1º Tenente\tWalter Freire Valentim\tAuxiliar Administrativo\n",
+  "stderr": "",
+  "execution_time_ms": 278
+}

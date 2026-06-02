@@ -75,6 +75,7 @@ export const servidores = mysqlTable("servidores", {
   matricula: varchar("matricula", { length: 16 }).notNull(),
   digito: varchar("digito", { length: 4 }),
   posto: varchar("posto", { length: 64 }),
+  funcao: varchar("funcao", { length: 64 }),
   nome: varchar("nome", { length: 255 }).notNull(),
   email: varchar("email", { length: 320 }),
   telefone: varchar("telefone", { length: 32 }),
