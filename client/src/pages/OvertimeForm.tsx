@@ -24,6 +24,111 @@ import AppLayout from "@/components/AppLayout";
 import { getLaunchWindow, isDateInWindow, formatWindow } from "@shared/launchWindow";
 import { AlertTriangle, Lock } from "lucide-react";
 
+// ─── Mini Calendar ───────────────────────────────────────────────────────────
+
+const DIAS_SEMANA_SHORT_FORM = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
+const MESES_FORM = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+
+const FERIADOS_FIXOS_FORM = ["01-01","04-21","05-01","09-07","10-12","11-02","11-15","11-20","12-25"];
+function calcEasterForm(year: number): Date {
+  const a = year % 19, b = Math.floor(year / 100), c = year % 100;
+  const d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4), k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const month = Math.floor((h + l - 7 * m + 114) / 31);
+  const day = ((h + l - 7 * m + 114) % 31) + 1;
+  return new Date(year, month - 1, day);
+}
+function isFeriadoForm(date: Date): boolean {
+  const mmdd = `${String(date.getMonth()+1).padStart(2,"0")}-${String(date.getDate()).padStart(2,"0")}`;
+  const easter = calcEasterForm(date.getFullYear());
+  const addDays = (d: Date, n: number) => { const r = new Date(d); r.setDate(r.getDate()+n); return r; };
+  const fmt = (d: Date) => `${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  const moveis = new Set([fmt(addDays(easter,-48)),fmt(addDays(easter,-47)),fmt(addDays(easter,-2)),fmt(easter),fmt(addDays(easter,60))]);
+  return FERIADOS_FIXOS_FORM.includes(mmdd) || moveis.has(mmdd);
+}
+
+interface DateCalendarProps {
+  mes: number;  // 1-12
+  ano: number;
+  selectedDate: string; // DD/MM/AAAA
+  onSelect: (dateBR: string) => void;
+}
+function DateCalendar({ mes, ano, selectedDate, onSelect }: DateCalendarProps) {
+  const daysInMonth = new Date(ano, mes, 0).getDate();
+  const firstDayOfWeek = new Date(ano, mes - 1, 1).getDay();
+  const selectedDay = (() => {
+    const m = selectedDate?.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (!m) return null;
+    if (Number(m[2]) === mes && Number(m[3]) === ano) return Number(m[1]);
+    return null;
+  })();
+  const today = new Date();
+  const isToday = (day: number) =>
+    today.getDate() === day && today.getMonth() + 1 === mes && today.getFullYear() === ano;
+
+  return (
+    <div className="select-none">
+      <div className="text-center text-xs font-semibold text-muted-foreground mb-2">
+        {MESES_FORM[mes - 1]} {ano}
+      </div>
+      <div className="grid grid-cols-7 mb-1">
+        {DIAS_SEMANA_SHORT_FORM.map(d => (
+          <div key={d} className={`text-center text-[10px] font-semibold py-0.5 ${
+            d === "Dom" || d === "Sáb" ? "text-blue-500" : "text-muted-foreground"
+          }`}>{d}</div>
+        ))}
+      </div>
+      <div className="grid grid-cols-7 gap-0.5">
+        {Array.from({ length: firstDayOfWeek }, (_, i) => <div key={`e-${i}`} />)}
+        {Array.from({ length: daysInMonth }, (_, i) => {
+          const day = i + 1;
+          const date = new Date(ano, mes - 1, day);
+          const dow = date.getDay();
+          const isWeekend = dow === 0 || dow === 6;
+          const isFer = isFeriadoForm(date);
+          const isSelected = selectedDay === day;
+          const isTod = isToday(day);
+          const dd = String(day).padStart(2,"0");
+          const mm = String(mes).padStart(2,"0");
+          const dateBR = `${dd}/${mm}/${ano}`;
+          return (
+            <button
+              key={day}
+              type="button"
+              onClick={() => onSelect(dateBR)}
+              className={`relative rounded p-1 text-center min-h-[36px] border transition-all text-[11px] font-bold hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                isSelected
+                  ? "bg-primary text-primary-foreground border-primary shadow-md scale-105"
+                  : isTod
+                    ? "bg-primary/10 border-primary/40 text-primary"
+                    : isFer
+                      ? "bg-amber-50 border-amber-200 text-amber-700"
+                      : isWeekend
+                        ? "bg-blue-50 border-blue-100 text-blue-600"
+                        : "bg-background border-border text-foreground hover:bg-muted/60"
+              }`}
+              title={isFer ? "Feriado" : isWeekend ? "Fim de semana" : ""}
+            >
+              {day}
+              {isFer && !isSelected && (
+                <span className="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-amber-400" />
+              )}
+            </button>
+          );
+        })}
+      </div>
+      <div className="flex flex-wrap gap-2 mt-2 text-[10px] text-muted-foreground">
+        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-blue-50 border border-blue-100 inline-block" /> Fim de semana</span>
+        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-amber-50 border border-amber-200 inline-block" /> Feriado</span>
+        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-primary inline-block" /> Selecionado</span>
+      </div>
+    </div>
+  );
+}
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const TIPOS_ESCALA = [
@@ -547,23 +652,42 @@ export default function OvertimeForm() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Data */}
+              {/* Mini Calendário */}
               <div>
-                <Label className="text-xs font-medium mb-1.5 block">Data *</Label>
-                <Input
-                  {...register("date")}
-                  placeholder="DD/MM/AAAA"
-                  maxLength={10}
-                  className={`max-w-[200px] ${errors.date ? "border-destructive" : ""}`}
-                  onChange={(e) => {
-                    let val = e.target.value.replace(/\D/g, "");
-                    if (val.length > 2) val = val.slice(0, 2) + "/" + val.slice(2);
-                    if (val.length > 5) val = val.slice(0, 5) + "/" + val.slice(5);
-                    val = val.slice(0, 10);
-                    e.target.value = val;
-                    register("date").onChange(e);
-                  }}
+                <Label className="text-xs font-medium mb-2 block">Data * — clique no dia para selecionar</Label>
+                <Controller
+                  name="date"
+                  control={control}
+                  render={({ field }) => (
+                    <DateCalendar
+                      mes={launchWindow.mesRef}
+                      ano={launchWindow.anoRef}
+                      selectedDate={field.value}
+                      onSelect={(dateBR) => {
+                        field.onChange(dateBR);
+                        setValue("date", dateBR, { shouldValidate: true });
+                      }}
+                    />
+                  )}
                 />
+                {/* Campo de texto auxiliar para digitar manualmente se necessário */}
+                <div className="mt-2 flex items-center gap-2">
+                  <Input
+                    {...register("date")}
+                    placeholder="DD/MM/AAAA"
+                    maxLength={10}
+                    className={`max-w-[160px] text-sm ${errors.date ? "border-destructive" : ""}`}
+                    onChange={(e) => {
+                      let val = e.target.value.replace(/\D/g, "");
+                      if (val.length > 2) val = val.slice(0, 2) + "/" + val.slice(2);
+                      if (val.length > 5) val = val.slice(0, 5) + "/" + val.slice(5);
+                      val = val.slice(0, 10);
+                      e.target.value = val;
+                      register("date").onChange(e);
+                    }}
+                  />
+                  <span className="text-xs text-muted-foreground">ou digite manualmente</span>
+                </div>
                 {errors.date && <p className="text-xs text-destructive mt-1">{errors.date.message}</p>}
               </div>
 
