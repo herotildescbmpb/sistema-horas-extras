@@ -135,24 +135,24 @@
 
 ## Perfis de Usuário e Gestão de Permissões (v11)
 
-- [ ] Migrar enum `role` no schema: `user` → `chefe`, adicionar `auxiliar_administrativo`, manter `admin`
-- [ ] Gerar migration SQL e aplicar via webdev_execute_sql
-- [ ] Criar tabela `role_permissions` (role, permission_key, enabled, label, category)
-- [ ] Seed de permissões padrão para cada perfil
-- [ ] Endpoints tRPC: `permissions.list`, `permissions.update`, `permissions.getMyPermissions`
-- [ ] Atualizar sidebar para exibir itens conforme permissões do perfil
-- [ ] Atualizar painel admin de usuários para mostrar e editar os três perfis
-- [ ] Criar página `/admin/permissoes` com tabela de permissões por perfil (toggle por linha)
-- [ ] Adicionar item "Permissões" no menu admin
+- [x] Migrar enum `role` no schema: `user` → `chefe`, adicionar `auxiliar_administrativo`, manter `admin`
+- [x] Gerar migration SQL e aplicar via webdev_execute_sql
+- [x] Criar tabela `role_permissions` (role, permission_key, enabled, label, category)
+- [x] Seed de permissões padrão para cada perfil
+- [x] Endpoints tRPC: `permissions.list`, `permissions.update`, `permissions.getMyPermissions`
+- [x] Atualizar sidebar para exibir itens conforme permissões do perfil
+- [x] Atualizar painel admin de usuários para mostrar e editar os três perfis
+- [x] Criar página `/admin/permissoes` com tabela de permissões por perfil (toggle por linha)
+- [x] Adicionar item "Permissões" no menu admin
 
 ## Autenticação Local (e-mail + senha) (v12)
 
-- [ ] Adicionar colunas `passwordHash` e `mustChangePassword` na tabela users
-- [ ] Instalar bcryptjs para hash de senha
-- [ ] Criar endpoint `auth.localLogin` (e-mail + senha → JWT de sessão local)
-- [ ] Criar endpoint `auth.changePassword` (troca de senha com validação)
-- [ ] Definir senha padrão `20262026` ao cadastrar novo usuário pelo admin
-- [ ] Criar tela de login local (`/login`) com campos e-mail e senha
-- [ ] Criar modal de troca obrigatória de senha (exibido quando `mustChangePassword = true`)
-- [ ] Integrar sessão local com o contexto `useAuth()` do frontend
-- [ ] Atualizar guia do usuário com instruções de login local
+- [x] Adicionar colunas `passwordHash` e `mustChangePassword` na tabela users
+- [x] Instalar bcryptjs para hash de senha
+- [x] Criar endpoint `auth.localLogin` (e-mail + senha → JWT de sessão local)
+- [x] Criar endpoint `auth.changePassword` (troca de senha com validação)
+- [x] Definir senha padrão `20262026` ao cadastrar novo usuário pelo admin
+- [x] Criar tela de login local (`/login`) com campos e-mail e senha
+- [x] Criar modal de troca obrigatória de senha (exibido quando `mustChangePassword = true`)
+- [x] Integrar sessão local com o contexto `useAuth()` do frontend
+- [x] Atualizar guia do usuário com instruções de login local

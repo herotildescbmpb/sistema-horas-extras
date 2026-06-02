@@ -463,7 +463,7 @@ const SECTIONS: Section[] = [
     ),
   },
 
-  // ── Segurança e Acesso ────────────────────────────────────────────────────────
+  // ── Segurança e Acesso ────────────────────────────────────────────
   {
     id: "seguranca",
     title: "Acesso e Segurança",
@@ -471,9 +471,28 @@ const SECTIONS: Section[] = [
     roles: ["all"],
     content: (
       <>
-        <H2>Login</H2>
+        <H2>Login com e-mail e senha</H2>
         <P>
-          O acesso ao sistema é feito via <strong>Manus OAuth</strong>. Clique em <strong>"Entrar com Manus"</strong> na tela inicial e autentique-se com sua conta Google ou e-mail cadastrado.
+          O acesso ao sistema é feito pela tela de login com <strong>e-mail</strong> e <strong>senha</strong>. Cada usuário é cadastrado pelo administrador e recebe a senha inicial <strong>20262026</strong>.
+        </P>
+        <Note type="warning">
+          No primeiro acesso, o sistema exibirá obrigatoriamente um modal para troca de senha. A senha inicial não pode ser mantida.
+        </Note>
+        <H2>Primeiro acesso — passo a passo</H2>
+        <div className="space-y-2 mb-4">
+          <Step n={1}>Acesse o sistema pelo endereço fornecido pelo administrador.</Step>
+          <Step n={2}>Informe seu <strong>e-mail institucional</strong> e a senha inicial <strong>20262026</strong>.</Step>
+          <Step n={3}>Ao entrar, um modal de troca de senha será exibido automaticamente.</Step>
+          <Step n={4}>Defina uma nova senha com no mínimo 6 caracteres e confirme. Clique em <strong>Salvar nova senha</strong>.</Step>
+          <Step n={5}>Após a troca, você será redirecionado para o Dashboard normalmente.</Step>
+        </div>
+        <H2>Alterar senha voluntariamente</H2>
+        <P>
+          A qualquer momento você pode alterar sua senha acessando <strong>Perfil</strong> (clique no seu nome na barra lateral) e clicando em <strong>Alterar Senha</strong> na seção Segurança.
+        </P>
+        <H2>Redefinir senha pelo administrador</H2>
+        <P>
+          Se um usuário esquecer a senha, o administrador pode redefini-la para o padrão <strong>20262026</strong> acessando <strong>Painel Admin → Usuários</strong>, localizando o usuário e clicando em <strong>Senha → Redefinir para padrão</strong>. O usuário será obrigado a trocar a senha no próximo acesso.
         </P>
         <H2>Sessão</H2>
         <UL>
