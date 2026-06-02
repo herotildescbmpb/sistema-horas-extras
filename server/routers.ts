@@ -33,6 +33,7 @@ import {
   setUserRole,
   updateDepartment,
   updateEscalaItem,
+  duplicateEscala,
   updateEscalaStatus,
   updateOvertimeRecord,
   updateUserProfile,
@@ -467,6 +468,18 @@ export const appRouter = router({
       .mutation(({ ctx, input }) =>
         updateEscalaStatus(input.id, input.status, ctx.user.id, input.reviewNote)
       ),
+
+    duplicate: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const escala = await getEscalaById(input.id);
+        if (!escala) throw new TRPCError({ code: "NOT_FOUND" });
+        if (escala.userId !== ctx.user.id && ctx.user.role !== "admin") {
+          throw new TRPCError({ code: "FORBIDDEN" });
+        }
+        const result = await duplicateEscala(input.id, ctx.user.id);
+        return result;
+      }),
   }),
 });
 

@@ -3,26 +3,70 @@ import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Plus, Calendar, Users, Clock, ChevronRight, FileText, Rocket } from "lucide-react";
+import { Plus, Calendar, Clock, ChevronRight, FileText, Rocket, Copy } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 
 const MESES = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+const MESES_FULL = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 
-const STATUS_MAP: Record<string, { label: string; variant: "default"|"secondary"|"outline"|"destructive" }> = {
-  rascunho:  { label: "Rascunho",  variant: "secondary" },
-  lancado:   { label: "Lançado",   variant: "default" },
-  aprovado:  { label: "Aprovado",  variant: "default" },
-  rejeitado: { label: "Rejeitado", variant: "destructive" },
+const STATUS_MAP: Record<string, { label: string; variant: "default"|"secondary"|"outline"|"destructive"; color: string }> = {
+  rascunho:  { label: "Rascunho",  variant: "secondary",    color: "text-muted-foreground" },
+  lancado:   { label: "Lançado",   variant: "default",      color: "text-primary" },
+  aprovado:  { label: "Aprovado",  variant: "default",      color: "text-emerald-600" },
+  rejeitado: { label: "Rejeitado", variant: "destructive",  color: "text-destructive" },
 };
 
 export default function EscalaList() {
   const [, navigate] = useLocation();
   const { data: escalas, isLoading, refetch } = trpc.escalas.list.useQuery();
+
+  // Estado para confirmação de duplicação
+  const [duplicateTarget, setDuplicateTarget] = useState<{ id: number; tipoEscala: string; mes: number; ano: number } | null>(null);
+
   const launchMutation = trpc.escalas.launch.useMutation({
-    onSuccess: () => { toast.success("Escala lançada!"); refetch(); },
+    onSuccess: () => { toast.success("Escala lançada com sucesso!"); refetch(); },
     onError: (e) => toast.error(e.message),
   });
+
+  const duplicateMutation = trpc.escalas.duplicate.useMutation({
+    onSuccess: (result) => {
+      refetch();
+      const mesNome = MESES_FULL[(result.mes ?? 1) - 1];
+      toast.success(
+        `Escala duplicada para ${mesNome}/${result.ano}!`,
+        {
+          action: {
+            label: "Ver escala",
+            onClick: () => navigate(`/escalas/${result.id}`),
+          },
+          duration: 6000,
+        }
+      );
+      setDuplicateTarget(null);
+    },
+    onError: (e) => {
+      toast.error(e.message);
+      setDuplicateTarget(null);
+    },
+  });
+
+  // Calcular próximo mês para exibir no diálogo
+  const getNextMonth = (mes: number, ano: number) => {
+    const novoMes = mes === 12 ? 1 : mes + 1;
+    const novoAno = mes === 12 ? ano + 1 : ano;
+    return { mes: novoMes, ano: novoAno, label: `${MESES_FULL[novoMes - 1]}/${novoAno}` };
+  };
 
   if (isLoading) {
     return (
@@ -67,7 +111,8 @@ export default function EscalaList() {
         ) : (
           <div className="space-y-3">
             {(escalas as any[]).map((escala) => {
-              const statusInfo = STATUS_MAP[escala.status] ?? { label: escala.status, variant: "outline" as const };
+              const statusInfo = STATUS_MAP[escala.status] ?? { label: escala.status, variant: "outline" as const, color: "" };
+              const nextMonth = getNextMonth(escala.mes ?? 1, escala.ano ?? new Date().getFullYear());
               return (
                 <div
                   key={escala.id}
@@ -78,7 +123,7 @@ export default function EscalaList() {
                       <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="font-semibold text-foreground">{escala.tipoEscala}</h3>
                         <Badge variant={statusInfo.variant} className="text-xs">{statusInfo.label}</Badge>
-                        <span className="text-muted-foreground text-xs">
+                        <span className="text-muted-foreground text-xs font-medium">
                           {MESES[(escala.mes ?? 1) - 1]}/{escala.ano}
                         </span>
                       </div>
@@ -102,7 +147,10 @@ export default function EscalaList() {
                         </p>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
+
+                    {/* Ações */}
+                    <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+                      {/* Lançar — apenas rascunhos */}
                       {escala.status === "rascunho" && (
                         <Button
                           size="sm"
@@ -115,6 +163,25 @@ export default function EscalaList() {
                           Lançar
                         </Button>
                       )}
+
+                      {/* Duplicar — disponível para qualquer status */}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="gap-1.5 text-xs border-dashed hover:border-solid hover:bg-primary/5"
+                        onClick={() => setDuplicateTarget({
+                          id: escala.id,
+                          tipoEscala: escala.tipoEscala,
+                          mes: escala.mes ?? 1,
+                          ano: escala.ano ?? new Date().getFullYear(),
+                        })}
+                        disabled={duplicateMutation.isPending}
+                        title={`Duplicar para ${nextMonth.label}`}
+                      >
+                        <Copy className="w-3.5 h-3.5" />
+                        Duplicar
+                      </Button>
+
                       <Button
                         size="sm"
                         variant="ghost"
@@ -131,6 +198,60 @@ export default function EscalaList() {
           </div>
         )}
       </div>
+
+      {/* Diálogo de confirmação de duplicação */}
+      <AlertDialog open={!!duplicateTarget} onOpenChange={(open) => { if (!open) setDuplicateTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Copy className="w-5 h-5 text-primary" />
+              Duplicar Escala para o Próximo Mês
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3 text-sm text-muted-foreground">
+                <p>
+                  Você está prestes a duplicar a escala de{" "}
+                  <strong className="text-foreground">{duplicateTarget?.tipoEscala}</strong>{" "}
+                  de{" "}
+                  <strong className="text-foreground">
+                    {duplicateTarget ? MESES_FULL[(duplicateTarget.mes ?? 1) - 1] : ""}
+                    /{duplicateTarget?.ano}
+                  </strong>{" "}
+                  para{" "}
+                  <strong className="text-foreground">
+                    {duplicateTarget ? getNextMonth(duplicateTarget.mes, duplicateTarget.ano).label : ""}
+                  </strong>.
+                </p>
+                <div className="bg-muted/60 rounded-lg p-3 text-xs space-y-1">
+                  <p className="font-medium text-foreground">O que será copiado:</p>
+                  <ul className="list-disc list-inside space-y-0.5">
+                    <li>Todos os militares e seus dias de serviço</li>
+                    <li>Horários de início e fim de cada registro</li>
+                    <li>Tipo de escala, setor e justificativa</li>
+                  </ul>
+                  <p className="font-medium text-foreground mt-2">O que será ajustado automaticamente:</p>
+                  <ul className="list-disc list-inside space-y-0.5">
+                    <li>Datas transpostas para o novo mês</li>
+                    <li>Modalidade recalculada (Especial/Extraordinário) conforme o dia da semana</li>
+                    <li>Nova escala criada como <strong>Rascunho</strong> para revisão antes do lançamento</li>
+                  </ul>
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => duplicateTarget && duplicateMutation.mutate({ id: duplicateTarget.id })}
+              disabled={duplicateMutation.isPending}
+              className="gap-2"
+            >
+              <Copy className="w-4 h-4" />
+              {duplicateMutation.isPending ? "Duplicando..." : "Confirmar Duplicação"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppLayout>
   );
 }

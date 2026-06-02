@@ -98,6 +98,11 @@
 - [x] Remover campo "projeto" do formulário individual
 - [x] Adicionar item "Escalas em Lote" no menu de navegação
 
+## Duplicar Escala para Próximo Mês (v8)
+- [ ] Criar endpoint tRPC `escalas.duplicate` que cria cópia para o próximo mês com os mesmos militares
+- [ ] Adicionar botão "Duplicar" na listagem de escalas com confirmação
+- [ ] Exibir toast de sucesso com link para a nova escala duplicada
+
 ## Wizard Escala — Novo Fluxo por Militar (v7)
 - [x] Novo fluxo: Configuração → Militar 1 (dados + calendário) → Militar 2... → Revisão → Lançamento
 - [x] Cada militar tem seu próprio calendário com dias distintos

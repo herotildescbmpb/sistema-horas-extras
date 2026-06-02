@@ -518,3 +518,69 @@ export async function launchEscala(escalaId: number, creatorUserId: number) {
 
   await updateEscalaStatus(escalaId, "lancado");
 }
+
+export async function duplicateEscala(escalaId: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const original = await getEscalaById(escalaId);
+  if (!original) throw new Error("Escala não encontrada");
+
+  // Calcular próximo mês/ano
+  let novoMes = original.mes + 1;
+  let novoAno = original.ano;
+  if (novoMes > 12) { novoMes = 1; novoAno += 1; }
+
+  // Criar nova escala-mãe como rascunho
+  const [result] = await db.insert(escalas).values({
+    userId,
+    tipoEscala: original.tipoEscala,
+    mes: novoMes,
+    ano: novoAno,
+    startTime: original.startTime,
+    endTime: original.endTime,
+    funcao: original.funcao,
+    department: original.department,
+    justificativa: original.justificativa,
+    status: "rascunho",
+  }).$returningId();
+
+  const novaEscalaId = result.id;
+
+  // Duplicar os itens ajustando as datas para o novo mês
+  if (original.items.length > 0) {
+    const novosItems: InsertEscalaItem[] = original.items.map(item => {
+      // Substituir mês e ano na data (formato YYYY-MM-DD)
+      const [, , dd] = item.date.split("-");
+      // Verificar se o dia existe no novo mês
+      const daysInNewMonth = new Date(novoAno, novoMes, 0).getDate();
+      const dia = Math.min(parseInt(dd, 10), daysInNewMonth);
+      const novaData = `${novoAno}-${String(novoMes).padStart(2, "0")}-${String(dia).padStart(2, "0")}`;
+
+      // Recalcular modalidade para o novo dia
+      const date = new Date(novaData + "T12:00:00");
+      const dow = date.getDay();
+      const novaModalidade = (dow === 5 || dow === 6 || dow === 0) ? "Especial" : "Extraordinário";
+
+      // Recalcular dayType
+      const novoDayType: "weekday" | "saturday" | "sunday_holiday" =
+        dow === 6 ? "saturday" : dow === 0 ? "sunday_holiday" : "weekday";
+
+      return {
+        escalaId: novaEscalaId,
+        nomeServidor: item.nomeServidor,
+        matricula: item.matricula,
+        posto: item.posto ?? undefined,
+        date: novaData,
+        startTime: item.startTime,
+        endTime: item.endTime,
+        totalMinutes: item.totalMinutes,
+        dayType: novoDayType,
+        modalidade: novaModalidade,
+      };
+    });
+    await db.insert(escalaItems).values(novosItems);
+  }
+
+  return { id: novaEscalaId, mes: novoMes, ano: novoAno };
+}
