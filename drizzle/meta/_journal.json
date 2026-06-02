@@ -43,6 +43,13 @@
       "when": 1780411042628,
       "tag": "0005_lethal_enchantress",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1780412706227,
+      "tag": "0006_glorious_spirit",
+      "breakpoints": true
     }
   ]
 }

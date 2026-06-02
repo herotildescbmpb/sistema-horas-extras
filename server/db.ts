@@ -3,7 +3,11 @@ import { drizzle } from "drizzle-orm/mysql2";
 import { like, or } from "drizzle-orm";
 import {
   departments,
+  escalaItems,
+  escalas,
   InsertDepartment,
+  InsertEscala,
+  InsertEscalaItem,
   InsertOvertimeRecord,
   InsertUser,
   overtimeRecords,
@@ -387,4 +391,130 @@ export async function getAdminMonthSummary(year: number, month: number) {
   const employeeIds = new Set(records.map((r) => r.userId));
 
   return { totalMinutes, pendingCount, employeeCount: employeeIds.size };
+}
+
+// ─── Escalas em Lote ─────────────────────────────────────────────────────────
+
+export async function createEscala(data: InsertEscala, items: InsertEscalaItem[]) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const [result] = await db.insert(escalas).values(data).$returningId();
+  const escalaId = result.id;
+  if (items.length > 0) {
+    await db.insert(escalaItems).values(items.map(i => ({ ...i, escalaId })));
+  }
+  return escalaId;
+}
+
+export async function getEscalasByUser(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(escalas).where(eq(escalas.userId, userId)).orderBy(desc(escalas.createdAt));
+}
+
+export async function getAllEscalas(filters?: { status?: string; userId?: number }) {
+  const db = await getDb();
+  if (!db) return [];
+  const conditions = [];
+  if (filters?.status) conditions.push(eq(escalas.status, filters.status as any));
+  if (filters?.userId) conditions.push(eq(escalas.userId, filters.userId));
+  const rows = await db
+    .select({
+      id: escalas.id,
+      userId: escalas.userId,
+      tipoEscala: escalas.tipoEscala,
+      mes: escalas.mes,
+      ano: escalas.ano,
+      startTime: escalas.startTime,
+      endTime: escalas.endTime,
+      funcao: escalas.funcao,
+      department: escalas.department,
+      justificativa: escalas.justificativa,
+      status: escalas.status,
+      reviewedBy: escalas.reviewedBy,
+      reviewedAt: escalas.reviewedAt,
+      reviewNote: escalas.reviewNote,
+      createdAt: escalas.createdAt,
+      updatedAt: escalas.updatedAt,
+      creatorName: users.name,
+    })
+    .from(escalas)
+    .leftJoin(users, eq(escalas.userId, users.id))
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .orderBy(desc(escalas.createdAt));
+  return rows;
+}
+
+export async function getEscalaById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const [escala] = await db.select().from(escalas).where(eq(escalas.id, id)).limit(1);
+  if (!escala) return undefined;
+  const items = await db.select().from(escalaItems).where(eq(escalaItems.escalaId, id)).orderBy(escalaItems.date, escalaItems.nomeServidor);
+  return { ...escala, items };
+}
+
+export async function updateEscalaStatus(
+  id: number,
+  status: "rascunho" | "lancado" | "aprovado" | "rejeitado",
+  reviewerId?: number,
+  reviewNote?: string
+) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(escalas).set({
+    status,
+    reviewedBy: reviewerId ?? null,
+    reviewedAt: reviewerId ? new Date() : null,
+    reviewNote: reviewNote ?? null,
+  }).where(eq(escalas.id, id));
+}
+
+export async function updateEscalaItem(
+  itemId: number,
+  data: Partial<InsertEscalaItem>
+) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(escalaItems).set(data).where(eq(escalaItems.id, itemId));
+}
+
+export async function launchEscala(escalaId: number, creatorUserId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const escala = await getEscalaById(escalaId);
+  if (!escala) throw new Error("Escala não encontrada");
+
+  // Cria um overtime_record para cada item da escala
+  for (const item of escala.items) {
+    const date = item.date;
+    const dayOfWeek = new Date(date + "T12:00:00").getDay();
+    const isFeriado = false; // simplificado — modalidade já está no item
+    const dayType: "weekday" | "saturday" | "sunday_holiday" =
+      item.dayType === "saturday" ? "saturday" :
+      item.dayType === "sunday_holiday" ? "sunday_holiday" : "weekday";
+    const multiplier = dayType === "weekday" ? "1.50" : "2.00";
+
+    const [rec] = await db.insert(overtimeRecords).values({
+      userId: creatorUserId,
+      tipoEscala: escala.tipoEscala,
+      servidor: item.matricula,
+      date,
+      startTime: item.startTime,
+      endTime: item.endTime,
+      funcao: escala.funcao,
+      modalidade: item.modalidade,
+      totalMinutes: item.totalMinutes,
+      dayType,
+      multiplier,
+      reason: escala.justificativa ?? "",
+      department: escala.department ?? "",
+      status: "pending",
+    }).$returningId();
+
+    // Vincula o overtime_record ao item da escala
+    await db.update(escalaItems).set({ overtimeRecordId: rec.id }).where(eq(escalaItems.id, item.id));
+  }
+
+  await updateEscalaStatus(escalaId, "lancado");
 }

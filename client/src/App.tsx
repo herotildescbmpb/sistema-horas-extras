@@ -12,6 +12,9 @@ import AdminUsers from "./pages/AdminUsers";
 import AdminDepartments from "./pages/AdminDepartments";
 import Reports from "./pages/Reports";
 import Profile from "./pages/Profile";
+import EscalaList from "./pages/EscalaList";
+import EscalaWizard from "./pages/EscalaWizard";
+import EscalaDetail from "./pages/EscalaDetail";
 
 function Router() {
   return (
@@ -24,6 +27,9 @@ function Router() {
       <Route path="/admin" component={AdminPanel} />
       <Route path="/admin/usuarios" component={AdminUsers} />
       <Route path="/admin/setores" component={AdminDepartments} />
+      <Route path="/escalas" component={EscalaList} />
+      <Route path="/escalas/nova" component={EscalaWizard} />
+      <Route path="/escalas/:id" component={EscalaDetail} />
       <Route path="/perfil" component={Profile} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />

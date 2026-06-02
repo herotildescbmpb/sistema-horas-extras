@@ -82,3 +82,18 @@
 - [x] Criar endpoint tRPC `users.create` (admin only) para cadastrar novos usuários pré-cadastrados
 - [x] Criar modal de cadastro de novo usuário no AdminUsers com campos: Nome, E-mail, Setor, Perfil, Matrícula, Posto
 - [x] Adicionar botão "+ Novo Usuário" no cabeçalho da tela AdminUsers
+
+## Escala em Lote — Wizard Multi-Servidor (v6)
+- [ ] Criar tabela `escalas` (escala-mãe) e `escala_items` (registros individuais) no schema
+- [ ] Criar migration e aplicar via webdev_execute_sql
+- [ ] Criar routers tRPC: escalas.create, escalas.list, escalas.getById, escalas.submit, escalas.exportPdf, escalas.exportExcel
+- [ ] Criar página EscalaWizard com 4 etapas: Configuração → Calendário → Militares → Resumo
+- [ ] Etapa 1: Tipo de escala, hora início/fim, função, modalidade, setor, justificativa
+- [ ] Etapa 2: Calendário visual do mês com seleção de dias (clique), identificação de dias da semana, feriados
+- [ ] Etapa 3: Adicionar até 10 militares via autocomplete, com ajuste individual por dia se necessário
+- [ ] Etapa 4: Resumo visual em grade (militares × dias) com total de horas por militar
+- [ ] Exportação PDF do resumo da escala
+- [ ] Exportação Excel do resumo da escala
+- [ ] Botão "Salvar Rascunho" e botão "Enviar para Lançamento"
+- [ ] Remover campo "projeto" do formulário individual
+- [ ] Adicionar item "Nova Escala em Lote" no menu de navegação

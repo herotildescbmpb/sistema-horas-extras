@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import {
   BarChart3,
   Building2,
+  CalendarRange,
   ChevronLeft,
   ChevronRight,
   Clock,
@@ -42,6 +43,7 @@ const navItems: NavItem[] = [
   { label: "Dashboard", href: "/", icon: LayoutDashboard },
   { label: "Minhas Horas", href: "/horas", icon: Clock },
   { label: "Novo Registro", href: "/horas/novo", icon: ClipboardList },
+  { label: "Escalas em Lote", href: "/escalas", icon: CalendarRange },
   { label: "Relatórios", href: "/relatorios", icon: BarChart3 },
   { label: "Painel Admin", href: "/admin", icon: Shield, adminOnly: true },
   { label: "Usuários", href: "/admin/usuarios", icon: Users, adminOnly: true },

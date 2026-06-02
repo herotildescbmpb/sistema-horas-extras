@@ -10,16 +10,21 @@ import {
   getUserByEmail,
   createDepartment,
   createOvertimeRecord,
+  createEscala,
   deleteOvertimeRecord,
   getAdminMonthSummary,
+  getAllEscalas,
   getAllOvertimeRecords,
   getAllUsers,
   getDepartments,
   getDepartmentsWithChefe,
+  getEscalaById,
+  getEscalasByUser,
   getMonthSummary,
   getOvertimeRecordById,
   getOvertimeRecordsByUser,
   getUserById,
+  launchEscala,
   reviewOvertimeRecord,
   searchServidores,
   getServidorByMatricula,
@@ -27,6 +32,8 @@ import {
   setUserActive,
   setUserRole,
   updateDepartment,
+  updateEscalaItem,
+  updateEscalaStatus,
   updateOvertimeRecord,
   updateUserProfile,
 } from "./db";
@@ -367,6 +374,99 @@ export const appRouter = router({
 
         return { csv: [header, ...rows].join("\n"), count: records.length };
       }),
+  }),
+
+  // ─── Escalas em Lote ─────────────────────────────────────────────────────────
+  escalas: router({
+    list: protectedProcedure.query(({ ctx }) =>
+      ctx.user.role === "admin" ? getAllEscalas() : getEscalasByUser(ctx.user.id)
+    ),
+
+    listAll: adminProcedure
+      .input(z.object({ status: z.string().optional(), userId: z.number().optional() }))
+      .query(({ input }) => getAllEscalas(input)),
+
+    getById: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const escala = await getEscalaById(input.id);
+        if (!escala) throw new TRPCError({ code: "NOT_FOUND" });
+        if (escala.userId !== ctx.user.id && ctx.user.role !== "admin") {
+          throw new TRPCError({ code: "FORBIDDEN" });
+        }
+        return escala;
+      }),
+
+    create: protectedProcedure
+      .input(
+        z.object({
+          tipoEscala: z.string().min(1),
+          mes: z.number().min(1).max(12),
+          ano: z.number().min(2020).max(2100),
+          startTime: z.string(),
+          endTime: z.string(),
+          funcao: z.string().min(1),
+          department: z.string().optional(),
+          justificativa: z.string().optional(),
+          items: z.array(z.object({
+            matricula: z.string(),
+            nomeServidor: z.string(),
+            posto: z.string().optional(),
+            date: z.string(),
+            startTime: z.string(),
+            endTime: z.string(),
+            totalMinutes: z.number(),
+            modalidade: z.string(),
+            dayType: z.enum(["weekday", "saturday", "sunday_holiday"]),
+          })),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const { items, ...escalaData } = input;
+        const id = await createEscala(
+          { ...escalaData, userId: ctx.user.id },
+          items.map(i => ({ ...i, escalaId: 0 })) // escalaId set in createEscala
+        );
+        return { id };
+      }),
+
+    updateItem: protectedProcedure
+      .input(z.object({
+        itemId: z.number(),
+        startTime: z.string().optional(),
+        endTime: z.string().optional(),
+        totalMinutes: z.number().optional(),
+        modalidade: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { itemId, ...data } = input;
+        return updateEscalaItem(itemId, data);
+      }),
+
+    launch: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const escala = await getEscalaById(input.id);
+        if (!escala) throw new TRPCError({ code: "NOT_FOUND" });
+        if (escala.userId !== ctx.user.id && ctx.user.role !== "admin") {
+          throw new TRPCError({ code: "FORBIDDEN" });
+        }
+        if (escala.status !== "rascunho") {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Apenas rascunhos podem ser lançados." });
+        }
+        await launchEscala(input.id, ctx.user.id);
+        return { success: true };
+      }),
+
+    review: adminProcedure
+      .input(z.object({
+        id: z.number(),
+        status: z.enum(["aprovado", "rejeitado"]),
+        reviewNote: z.string().optional(),
+      }))
+      .mutation(({ ctx, input }) =>
+        updateEscalaStatus(input.id, input.status, ctx.user.id, input.reviewNote)
+      ),
   }),
 });
 

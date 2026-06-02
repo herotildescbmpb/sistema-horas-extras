@@ -83,3 +83,46 @@ export const servidores = mysqlTable("servidores", {
 
 export type Servidor = typeof servidores.$inferSelect;
 export type InsertServidor = typeof servidores.$inferInsert;
+
+// Escala em lote (escala-mãe)
+export const escalas = mysqlTable("escalas", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(), // quem criou
+  tipoEscala: varchar("tipoEscala", { length: 64 }).notNull(),
+  mes: int("mes").notNull(),   // 1-12
+  ano: int("ano").notNull(),   // ex: 2026
+  startTime: varchar("startTime", { length: 8 }).notNull(),
+  endTime: varchar("endTime", { length: 8 }).notNull(),
+  funcao: varchar("funcao", { length: 64 }).notNull(),
+  department: varchar("department", { length: 128 }),
+  justificativa: text("justificativa"),
+  status: mysqlEnum("status", ["rascunho", "lancado", "aprovado", "rejeitado"]).default("rascunho").notNull(),
+  reviewedBy: int("reviewedBy"),
+  reviewedAt: timestamp("reviewedAt"),
+  reviewNote: text("reviewNote"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Escala = typeof escalas.$inferSelect;
+export type InsertEscala = typeof escalas.$inferInsert;
+
+// Itens individuais de uma escala em lote (1 item = 1 militar + 1 dia)
+export const escalaItems = mysqlTable("escala_items", {
+  id: int("id").autoincrement().primaryKey(),
+  escalaId: int("escalaId").notNull(),
+  matricula: varchar("matricula", { length: 16 }).notNull(),
+  nomeServidor: varchar("nomeServidor", { length: 255 }).notNull(),
+  posto: varchar("posto", { length: 64 }),
+  date: varchar("date", { length: 10 }).notNull(), // YYYY-MM-DD
+  startTime: varchar("startTime", { length: 8 }).notNull(),
+  endTime: varchar("endTime", { length: 8 }).notNull(),
+  totalMinutes: int("totalMinutes").notNull(),
+  modalidade: varchar("modalidade", { length: 32 }).notNull(), // Especial | Extraordinário
+  dayType: mysqlEnum("dayType", ["weekday", "saturday", "sunday_holiday"]).notNull(),
+  overtimeRecordId: int("overtimeRecordId"), // FK para overtime_records após lançamento
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type EscalaItem = typeof escalaItems.$inferSelect;
+export type InsertEscalaItem = typeof escalaItems.$inferInsert;
