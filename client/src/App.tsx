@@ -19,6 +19,7 @@ import NovoRegistro from "./pages/NovoRegistro";
 import MeuSetor from "./pages/MeuSetor";
 import AdminPermissions from "./pages/AdminPermissions";
 import UserGuide from "./pages/UserGuide";
+import Login from "./pages/Login";
 
 function Router() {
   return (
@@ -39,6 +40,7 @@ function Router() {
       <Route path="/meu-setor" component={MeuSetor} />
       <Route path="/guia" component={UserGuide} />
       <Route path="/perfil" component={Profile} />
+      <Route path="/login" component={Login} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

@@ -52,6 +52,9 @@ import {
   setRolePermission,
   DEFAULT_PERMISSIONS,
   RoleType,
+  getUserByEmailWithPassword,
+  updateUserPassword,
+  resetUserPassword,
 } from "./db";
 
 // ─── Admin guard ──────────────────────────────────────────────────────────────
@@ -85,6 +88,62 @@ export const appRouter = router({
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
       return { success: true } as const;
     }),
+
+    // Login local com e-mail + senha
+    localLogin: publicProcedure
+      .input(z.object({ email: z.string().email(), password: z.string().min(1) }))
+      .mutation(async ({ input, ctx }) => {
+        const bcrypt = await import("bcryptjs");
+        const { sdk } = await import("./_core/sdk");
+        const user = await getUserByEmailWithPassword(input.email);
+        if (!user || !user.passwordHash) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "E-mail ou senha incorretos." });
+        }
+        if (!user.isActive) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Usuário inativo. Contate o administrador." });
+        }
+        const valid = await bcrypt.compare(input.password, user.passwordHash);
+        if (!valid) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "E-mail ou senha incorretos." });
+        }
+        // Usar o mesmo mecanismo de sessão do OAuth
+        const token = await sdk.createSessionToken(user.openId, {
+          name: user.name || "",
+          expiresInMs: 365 * 24 * 60 * 60 * 1000,
+        });
+        const cookieOptions = getSessionCookieOptions(ctx.req);
+        ctx.res.cookie(COOKIE_NAME, token, { ...cookieOptions, maxAge: 365 * 24 * 60 * 60 * 1000 });
+        return { success: true, mustChangePassword: user.mustChangePassword };
+      }),
+
+    // Troca de senha (autenticado)
+    changePassword: protectedProcedure
+      .input(z.object({
+        currentPassword: z.string().min(1),
+        newPassword: z.string().min(6, "A nova senha deve ter pelo menos 6 caracteres."),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const bcrypt = await import("bcryptjs");
+        const user = await getUserByEmailWithPassword(ctx.user.email ?? "");
+        if (!user || !user.passwordHash) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Usuário sem senha local configurada." });
+        }
+        const valid = await bcrypt.compare(input.currentPassword, user.passwordHash);
+        if (!valid) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "Senha atual incorreta." });
+        }
+        const newHash = await bcrypt.hash(input.newPassword, 10);
+        await updateUserPassword(user.id, newHash);
+        return { success: true };
+      }),
+
+    // Redefinir senha para padrão (admin only)
+    resetPassword: adminProcedure
+      .input(z.object({ userId: z.number() }))
+      .mutation(async ({ input }) => {
+        await resetUserPassword(input.userId);
+        return { success: true };
+      }),
   }),
 
   // ─── Servidores ──────────────────────────────────────────────────────────────

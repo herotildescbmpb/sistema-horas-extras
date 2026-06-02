@@ -1,5 +1,4 @@
 import { useAuth } from "@/_core/hooks/useAuth";
-import { getLoginUrl } from "@/const";
 import { cn } from "@/lib/utils";
 import {
   BarChart3,
@@ -33,6 +32,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import NotificationBell from "@/components/NotificationBell";
+import ChangePasswordModal from "@/components/ChangePasswordModal";
 
 interface NavItem {
   label: string;
@@ -74,6 +74,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const { data: myPerms } = trpc.permissions.mine.useQuery(undefined, { enabled: !!user, staleTime: 60_000 });
 
   const isAdmin = user?.role === "admin";
+  const mustChangePwd = !!(user && (user as any).mustChangePassword);
   const visibleNav = useMemo(() => {
     return ALL_NAV_ITEMS.filter((item) => {
       if (item.adminOnly) return isAdmin;
@@ -94,22 +95,15 @@ export default function AppLayout({ children }: AppLayoutProps) {
   }
 
   if (!isAuthenticated) {
+    // Redirecionar para a tela de login local
+    if (typeof window !== "undefined" && window.location.pathname !== "/login") {
+      window.location.href = "/login";
+    }
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center max-w-sm mx-auto px-6">
-          <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center mx-auto mb-6 shadow-lg">
-            <Clock className="w-8 h-8 text-primary-foreground" />
-          </div>
-          <h1 className="text-2xl font-bold text-foreground mb-2">Horas Extras</h1>
-          <p className="text-muted-foreground mb-8 text-sm leading-relaxed">
-            Sistema de controle e gestão de horas extras. Faça login para continuar.
-          </p>
-          <Button
-            className="w-full h-11 text-sm font-semibold shadow-md"
-            onClick={() => (window.location.href = getLoginUrl())}
-          >
-            Entrar com Manus
-          </Button>
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+          <p className="text-sm text-muted-foreground font-medium">Redirecionando...</p>
         </div>
       </div>
     );
@@ -281,6 +275,14 @@ export default function AppLayout({ children }: AppLayoutProps) {
           {children}
         </main>
       </div>
+
+      {/* Modal de troca obrigatória de senha no primeiro acesso */}
+      {mustChangePwd && (
+        <ChangePasswordModal
+          mandatory
+          onSuccess={() => window.location.reload()}
+        />
+      )}
     </div>
   );
 }

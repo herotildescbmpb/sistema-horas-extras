@@ -123,7 +123,10 @@ export default function AdminUsers() {
     onError: (e) => toast.error(e.message),
   });
 
-  // ─── Create mutation ──────────────────────────────────────────────────────
+  // ─── Reset password mutation ──────────────────────────────────────
+  const resetPwdMutation = trpc.auth.resetPassword.useMutation();
+
+  // ─── Create mutation ────────────────────────────────────────────
   const createUser = trpc.users.create.useMutation({
     onSuccess: () => {
       utils.users.list.invalidate();
@@ -611,25 +614,31 @@ export default function AdminUsers() {
               Redefinir Senha
             </DialogTitle>
             <DialogDescription>
-              O acesso ao sistema é feito via <strong>Manus OAuth</strong>. Para redefinir a senha
-              de <strong>{pwdTarget?.name}</strong>, oriente o usuário a utilizar a opção "Esqueci
-              minha senha" na tela de login.
+              Redefine a senha de <strong>{pwdTarget?.name}</strong> para o padrão <strong>20262026</strong>.
+              O usuário será obrigado a trocar a senha no próximo acesso.
             </DialogDescription>
           </DialogHeader>
-          <div className="bg-muted/50 rounded-lg p-4 text-sm text-muted-foreground space-y-2">
-            <p className="font-medium text-foreground">Como proceder:</p>
-            <ol className="list-decimal list-inside space-y-1">
-              <li>Acesse o portal de login do sistema</li>
-              <li>Clique em "Esqueci minha senha"</li>
-              <li>
-                Informe o e-mail cadastrado:{" "}
-                <strong className="text-foreground">{pwdTarget?.email ?? "—"}</strong>
-              </li>
-              <li>Siga as instruções enviadas por e-mail</li>
-            </ol>
+          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 text-sm text-amber-800 dark:text-amber-300">
+            <p className="font-medium">Atenção:</p>
+            <p className="mt-1">Esta ação invalida a senha atual do usuário e define a senha padrão <strong>20262026</strong>. O usuário deverá alterar a senha ao fazer login.</p>
           </div>
-          <DialogFooter>
-            <Button onClick={() => setPwdOpen(false)}>Entendido</Button>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setPwdOpen(false)}>Cancelar</Button>
+            <Button
+              onClick={() => {
+                if (!pwdTarget) return;
+                resetPwdMutation.mutate({ userId: pwdTarget.id }, {
+                  onSuccess: () => {
+                    toast.success(`Senha de ${pwdTarget.name} redefinida para 20262026`);
+                    setPwdOpen(false);
+                  },
+                  onError: (err) => toast.error(err.message || "Erro ao redefinir senha"),
+                });
+              }}
+              disabled={resetPwdMutation.isPending}
+            >
+              {resetPwdMutation.isPending ? "Redefinindo..." : "Redefinir para padrão"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

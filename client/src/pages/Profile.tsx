@@ -11,8 +11,9 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { User, Shield, UserCheck, Save, Loader2 } from "lucide-react";
-import { useEffect } from "react";
+import { User, Shield, UserCheck, Save, Loader2, KeyRound } from "lucide-react";
+import { useEffect, useState } from "react";
+import ChangePasswordModal from "@/components/ChangePasswordModal";
 
 const schema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
@@ -26,6 +27,7 @@ type FormData = z.infer<typeof schema>;
 
 export default function Profile() {
   const { user } = useAuth();
+  const [showChangePwd, setShowChangePwd] = useState(false);
   const utils = trpc.useUtils();
 
   const {
@@ -206,6 +208,33 @@ export default function Profile() {
           </CardContent>
         </Card>
       </form>
+
+      {/* Alterar senha */}
+      <Card className="shadow-sm border-border/60">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-sm font-semibold">Segurança</CardTitle>
+          <CardDescription className="text-xs">
+            Altere sua senha de acesso ao sistema
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button
+            variant="outline"
+            className="gap-2"
+            onClick={() => setShowChangePwd(true)}
+          >
+            <KeyRound className="w-4 h-4" />
+            Alterar Senha
+          </Button>
+        </CardContent>
+      </Card>
+
+      {showChangePwd && (
+        <ChangePasswordModal
+          open={showChangePwd}
+          onOpenChange={setShowChangePwd}
+        />
+      )}
     </div>
   );
 }

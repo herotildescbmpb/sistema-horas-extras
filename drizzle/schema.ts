@@ -21,6 +21,8 @@ export const users = mysqlTable("users", {
   position: varchar("position", { length: 128 }),
   hourlyRate: decimal("hourlyRate", { precision: 10, scale: 2 }),
   matricula: varchar("matricula", { length: 32 }),
+  passwordHash: varchar("passwordHash", { length: 255 }),
+  mustChangePassword: boolean("mustChangePassword").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),

@@ -144,3 +144,15 @@
 - [ ] Atualizar painel admin de usuários para mostrar e editar os três perfis
 - [ ] Criar página `/admin/permissoes` com tabela de permissões por perfil (toggle por linha)
 - [ ] Adicionar item "Permissões" no menu admin
+
+## Autenticação Local (e-mail + senha) (v12)
+
+- [ ] Adicionar colunas `passwordHash` e `mustChangePassword` na tabela users
+- [ ] Instalar bcryptjs para hash de senha
+- [ ] Criar endpoint `auth.localLogin` (e-mail + senha → JWT de sessão local)
+- [ ] Criar endpoint `auth.changePassword` (troca de senha com validação)
+- [ ] Definir senha padrão `20262026` ao cadastrar novo usuário pelo admin
+- [ ] Criar tela de login local (`/login`) com campos e-mail e senha
+- [ ] Criar modal de troca obrigatória de senha (exibido quando `mustChangePassword = true`)
+- [ ] Integrar sessão local com o contexto `useAuth()` do frontend
+- [ ] Atualizar guia do usuário com instruções de login local

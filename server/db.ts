@@ -117,17 +117,22 @@ export async function createUser(
   const db = await getDb();
   if (!db) return;
   const { nanoid } = await import("nanoid");
+  const bcrypt = await import("bcryptjs");
   const openId = `pre_${nanoid(12)}`;
+  // Senha padrão: 20262026 — usuário deve trocar no primeiro acesso
+  const passwordHash = await bcrypt.hash("20262026", 10);
   await db.insert(users).values({
     openId,
     name: data.name,
     email: data.email ?? null,
-    loginMethod: "pre-cadastro",
+    loginMethod: "local",
     role: data.role,
     department: data.department ?? null,
     position: data.position ?? null,
     matricula: data.matricula ?? null,
     isActive: true,
+    passwordHash,
+    mustChangePassword: true,
     lastSignedIn: new Date(),
   });
 }
@@ -865,4 +870,27 @@ export async function setRolePermission(role: RoleType, permissionKey: string, e
   } else {
     await db.insert(rolePermissions).values({ role, permissionKey, enabled });
   }
+}
+
+// ─── Autenticação Local ──────────────────────────────────────────────────────
+
+export async function getUserByEmailWithPassword(email: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
+  return result[0];
+}
+
+export async function updateUserPassword(userId: number, passwordHash: string) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(users).set({ passwordHash, mustChangePassword: false }).where(eq(users.id, userId));
+}
+
+export async function resetUserPassword(userId: number) {
+  const db = await getDb();
+  if (!db) return;
+  const bcrypt = await import("bcryptjs");
+  const passwordHash = await bcrypt.hash("20262026", 10);
+  await db.update(users).set({ passwordHash, mustChangePassword: true }).where(eq(users.id, userId));
 }
