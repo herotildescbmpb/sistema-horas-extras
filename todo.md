@@ -84,16 +84,16 @@
 - [x] Adicionar botão "+ Novo Usuário" no cabeçalho da tela AdminUsers
 
 ## Escala em Lote — Wizard Multi-Servidor (v6)
-- [ ] Criar tabela `escalas` (escala-mãe) e `escala_items` (registros individuais) no schema
-- [ ] Criar migration e aplicar via webdev_execute_sql
-- [ ] Criar routers tRPC: escalas.create, escalas.list, escalas.getById, escalas.submit, escalas.exportPdf, escalas.exportExcel
-- [ ] Criar página EscalaWizard com 4 etapas: Configuração → Calendário → Militares → Resumo
-- [ ] Etapa 1: Tipo de escala, hora início/fim, função, modalidade, setor, justificativa
-- [ ] Etapa 2: Calendário visual do mês com seleção de dias (clique), identificação de dias da semana, feriados
-- [ ] Etapa 3: Adicionar até 10 militares via autocomplete, com ajuste individual por dia se necessário
-- [ ] Etapa 4: Resumo visual em grade (militares × dias) com total de horas por militar
-- [ ] Exportação PDF do resumo da escala
-- [ ] Exportação Excel do resumo da escala
-- [ ] Botão "Salvar Rascunho" e botão "Enviar para Lançamento"
-- [ ] Remover campo "projeto" do formulário individual
-- [ ] Adicionar item "Nova Escala em Lote" no menu de navegação
+- [x] Criar tabela `escalas` (escala-mãe) e `escala_items` (registros individuais) no schema
+- [x] Criar migration e aplicar via webdev_execute_sql
+- [x] Criar routers tRPC: escalas.create, escalas.list, escalas.getById, escalas.launch, exportPdf (client-side), exportCsv (client-side)
+- [x] Criar página EscalaWizard com 4 etapas: Configuração → Calendário → Militares → Resumo
+- [x] Etapa 1: Tipo de escala, hora início/fim, função, modalidade, setor, justificativa
+- [x] Etapa 2: Calendário visual do mês com seleção de dias (clique), identificação de dias da semana, feriados
+- [x] Etapa 3: Adicionar até 10 militares via autocomplete, com ajuste individual por dia se necessário
+- [x] Etapa 4: Resumo visual em grade (militares × dias) com total de horas por militar
+- [x] Exportação PDF do resumo da escala (via window.print)
+- [x] Exportação CSV/Excel do resumo da escala
+- [x] Botão "Salvar Rascunho" e botão "Lançar Escala"
+- [x] Remover campo "projeto" do formulário individual
+- [x] Adicionar item "Escalas em Lote" no menu de navegação

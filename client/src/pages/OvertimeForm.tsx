@@ -162,7 +162,6 @@ const schema = z.object({
   modalidade: z.string().min(1, "Modalidade obrigatória"),
   reason: z.string().min(1, "Justificativa obrigatória"),
   department: z.string().min(1, "Setor obrigatório"),
-  project: z.string().optional(),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -188,7 +187,7 @@ export default function OvertimeForm() {
     defaultValues: {
       tipoEscala: "", servidorNome: "", matricula: "", posto: "",
       date: "", startTime: "", endTime: "", funcao: "", modalidade: "",
-      reason: "", department: "", project: "",
+      reason: "", department: "",
     },
   });
 
@@ -244,7 +243,7 @@ export default function OvertimeForm() {
         modalidade: (existingRecord as any).modalidade ?? "",
         reason: existingRecord.reason ?? "",
         department: existingRecord.department ?? "",
-        project: existingRecord.project ?? "",
+
       });
       setSearchQuery(nome);
     }
@@ -297,7 +296,7 @@ export default function OvertimeForm() {
       totalMinutes,
       reason: data.reason,
       department: data.department && data.department !== "none" ? data.department : undefined,
-      project: data.project || undefined,
+
     };
     if (isEdit) {
       updateMutation.mutate({ id: Number(params.id), ...payload });
@@ -711,10 +710,6 @@ function DepartmentProjectFields({ control, register, errors }: any) {
           )}
         />
         {errors?.department && <p className="text-xs text-destructive mt-1">{errors.department.message}</p>}
-      </div>
-      <div>
-        <Label className="text-xs font-medium mb-1.5 block">Projeto</Label>
-        <Input {...register("project")} placeholder="Ex: Projeto Alpha" />
       </div>
     </div>
   );
