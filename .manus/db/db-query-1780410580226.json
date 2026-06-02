@@ -1,0 +1,55 @@
+{
+  "query": "SELECT id, name, shortName FROM departments ORDER BY id;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4XMYXLTg6g9ZctA.83aa4a08e73e --database cDx3jwjHrzRKbmDZmbrJYX --execute SELECT id, name, shortName FROM departments ORDER BY id;",
+  "rows": [
+    {
+      "id": "30001",
+      "name": "Gabinete do Diretor de Apoio Logístico",
+      "shortName": "Gabinete do Diretor"
+    },
+    {
+      "id": "30002",
+      "name": "DAL/1 – Seção de Aquisições, Especificações e Registros",
+      "shortName": "DAL/1"
+    },
+    {
+      "id": "30003",
+      "name": "DAL/2 – Seção de Gestão Patrimonial",
+      "shortName": "DAL/2"
+    },
+    {
+      "id": "30004",
+      "name": "DAL/3 – Seção de Apoio à Administração",
+      "shortName": "DAL/3"
+    },
+    {
+      "id": "30005",
+      "name": "CSL – Centro de Suprimento Logístico",
+      "shortName": "CSL"
+    },
+    {
+      "id": "30006",
+      "name": "CAEO – Centro de Arquitetura, Engenharia e Obras",
+      "shortName": "CAEO"
+    },
+    {
+      "id": "30007",
+      "name": "CMAV – Centro de Controle e Manutenção de Viaturas",
+      "shortName": "CMAV"
+    },
+    {
+      "id": "60001",
+      "name": "Gabinete do Vice-Diretor",
+      "shortName": "Gabinete do Vice-Diretor"
+    },
+    {
+      "id": "60002",
+      "name": "Contratos",
+      "shortName": "Contratos"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\tshortName\n30001\tGabinete do Diretor de Apoio Logístico\tGabinete do Diretor\n30002\tDAL/1 – Seção de Aquisições, Especificações e Registros\tDAL/1\n30003\tDAL/2 – Seção de Gestão Patrimonial\tDAL/2\n30004\tDAL/3 – Seção de Apoio à Administração\tDAL/3\n30005\tCSL – Centro de Suprimento Logístico\tCSL\n30006\tCAEO – Centro de Arquitetura, Engenharia e Obras\tCAEO\n30007\tCMAV – Centro de Controle e Manutenção de Viaturas\tCMAV\n60001\tGabinete do Vice-Diretor\tGabinete do Vice-Diretor\n60002\tContratos\tContratos\n",
+  "stderr": "",
+  "execution_time_ms": 272
+}

@@ -1,0 +1,8 @@
+{
+  "query": "\n-- Renomear o setor existente para deixar claro que é do Diretor\nUPDATE departments\nSET shortName = 'Gabinete do Diretor'\nWHERE id = 30001;\n\n-- Inserir Gabinete do Vice-Diretor\nINSERT INTO departments (id, name, shortName, createdAt, updatedAt)\nVALUES (30008, 'Gabinete do Vice-Diretor', 'Gabinete do Vice-Diretor', NOW(), NOW());\n\n-- Inserir Contratos\nINSERT INTO departments (id, name, shortName, createdAt, updatedAt)\nVALUES (30009, 'Contratos', 'Contratos', NOW(), NOW());\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4XMYXLTg6g9ZctA.83aa4a08e73e --database cDx3jwjHrzRKbmDZmbrJYX --execute \n-- Renomear o setor existente para deixar claro que é do Diretor\nUPDATE departments\nSET shortName = 'Gabinete do Diretor'\nWHERE id = 30001;\n\n-- Inserir Gabinete do Vice-Diretor\nINSERT INTO departments (id, name, shortName, createdAt, updatedAt)\nVALUES (30008, 'Gabinete do Vice-Diretor', 'Gabinete do Vice-Diretor', NOW(), NOW());\n\n-- Inserir Contratos\nINSERT INTO departments (id, name, shortName, createdAt, updatedAt)\nVALUES (30009, 'Contratos', 'Contratos', NOW(), NOW());\n",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 8: Unknown column 'updatedAt' in 'field list'"
+  ]
+}
