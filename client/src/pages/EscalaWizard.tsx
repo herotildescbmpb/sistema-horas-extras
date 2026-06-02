@@ -463,27 +463,27 @@ export default function EscalaWizard() {
         body { font-family: Arial, sans-serif; padding: 24px; color: #222; }
         h2 { color: #1a3a5c; margin: 0 0 6px 0; font-size: 18px; }
         .meta { font-size: 12px; color: #555; margin: 2px 0; }
-        .legend { margin: 10px 0 14px 0; padding: 8px 12px; background: #f8f9fa; border-radius: 6px; border: 1px solid #e2e8f0; }
+        .legend { margin: 10px 0 14px 0; padding: 8px 12px; background: #f8f9fa; border-radius: 6px; border: 1px solid #e2e8f0; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
         table { border-collapse: collapse; width: 100%; margin-top: 4px; font-size: 11px; }
         th, td { border: 1px solid #d1d5db; padding: 5px 6px; }
         thead th { background: #1a3a5c; color: #fff; font-weight: 600; text-align: center; }
         thead th:first-child { text-align: left; }
         tbody tr:nth-child(even) { background: #f9fafb; }
-        tbody tr:hover { background: #eff6ff; }
         .total-col { font-weight: 700; color: #1a3a5c; text-align: center; }
         .footer { font-size: 10px; color: #999; margin-top: 16px; border-top: 1px solid #e5e7eb; padding-top: 8px; }
         @media print {
           body { padding: 12px; }
-          @page { size: A4 landscape; margin: 12mm; }
+          @page { size: A4 landscape; margin: 10mm; }
           table { font-size: 9px; }
           th, td { padding: 3px 4px; }
+          .legend { font-size: 10px; }
         }
       </style>
     </head><body>
       <h2>CBMPB — Escala de ${tipoEscala}</h2>
       <p class="meta">Período: <strong>${MESES[mes-1]}/${ano}</strong> &nbsp;|&nbsp; Setor: <strong>${department}</strong> &nbsp;|&nbsp; Função: <strong>${funcao}</strong></p>
       <p class="meta">Horário padrão: <strong>${globalStartTime} às ${globalEndTime}</strong> &nbsp;|&nbsp; Justificativa: ${justificativa}</p>
-      <div class="legend"><strong style="font-size:11px;color:#1a3a5c">Militares:</strong> ${colorSwatches}</div>
+      <div class="legend"><strong style="font-size:11px;color:#1a3a5c;margin-right:4px">Militares:</strong> ${colorSwatches}</div>
       <table>
         <thead><tr>
           <th style="text-align:left;min-width:140px">Militar</th>
@@ -494,11 +494,20 @@ export default function EscalaWizard() {
         <tbody>${rows.join("")}</tbody>
       </table>
       <div class="footer">Gerado em ${new Date().toLocaleString("pt-BR")} &nbsp;—&nbsp; Sistema de Horas Extras DAL/CBMPB</div>
-      <script>window.onload = function() { setTimeout(function(){ window.print(); }, 300); }</script>
     </body></html>`;
 
     const win = window.open("", "_blank");
-    if (win) { win.document.write(html); win.document.close(); }
+    if (!win) {
+      toast.error("Popup bloqueado pelo navegador. Permita popups para este site e tente novamente.");
+      return;
+    }
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
+    // Aguarda o documento carregar antes de imprimir
+    win.addEventListener("load", () => win.print(), { once: true });
+    // Fallback caso o evento load já tenha disparado
+    setTimeout(() => { try { win.print(); } catch (_) {} }, 600);
   };
 
   // ── Export CSV ──
@@ -956,26 +965,21 @@ export default function EscalaWizard() {
                 </h3>
                 <div className="border border-border rounded-xl p-4 bg-muted/10">
                   <MiniCalendar mes={mes} ano={ano} markedDays={markedDaysMap} />
-                  {/* Legenda de cores */}
-                  <div className="flex flex-wrap gap-2 mt-3">
+                  {/* Legenda de cores — uma linha única com cor, nome completo e dias */}
+                  <div className="flex flex-wrap gap-x-4 gap-y-2 mt-3">
                     {militares.filter(m => m.matricula).map((m, idx) => {
                       const c = MILITAR_COLORS[idx % MILITAR_COLORS.length];
+                      const dias = m.selectedDays.size;
                       return (
                         <div key={m.id} className="flex items-center gap-1.5">
                           <div className={`w-3 h-3 rounded-sm ${c.bg} flex-shrink-0`} />
-                          <span className="text-xs text-muted-foreground">{m.nome || m.matricula}</span>
+                          <span className={`text-xs font-medium ${c.text}`}>{m.posto} {m.nome || m.matricula}</span>
+                          {dias > 0 && (
+                            <span className="text-[11px] text-muted-foreground">({dias} dia{dias > 1 ? "s" : ""})</span>
+                          )}
                         </div>
                       );
                     })}
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-3">
-                    {militares.filter(m => m.matricula && m.selectedDays.size > 0).map(m => (
-                      <div key={m.id} className="flex items-center gap-1.5 text-xs">
-                        <div className="w-2.5 h-2.5 rounded-full bg-primary" />
-                        <span className="text-foreground font-medium">{m.posto} {m.nome}</span>
-                        <span className="text-muted-foreground">({m.selectedDays.size} dia{m.selectedDays.size > 1 ? "s" : ""})</span>
-                      </div>
-                    ))}
                   </div>
                 </div>
               </div>
