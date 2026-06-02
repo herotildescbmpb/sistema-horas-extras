@@ -90,6 +90,12 @@ export async function getUserById(id: number) {
   return result[0];
 }
 
+export async function deleteUser(userId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(users).where(eq(users.id, userId));
+}
+
 export async function setUserActive(userId: number, isActive: boolean) {
   const db = await getDb();
   if (!db) return;

@@ -6,6 +6,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import {
   adminUpdateUser,
+  deleteUser,
   createUser,
   getUserByEmail,
   createDepartment,
@@ -172,7 +173,7 @@ export const appRouter = router({
           email: z.string().email("E-mail inválido").optional().or(z.literal("")),
           department: z.string().optional(),
           position: z.string().optional(),
-          role: z.enum(["user", "admin", "chefe", "auxiliar_administrativo"]).default("user"),
+          role: z.enum(["admin", "chefe", "auxiliar_administrativo"]).default("chefe"),
           matricula: z.string().optional(),
         })
       )
@@ -192,6 +193,16 @@ export const appRouter = router({
           role: input.role,
           matricula: input.matricula || undefined,
         });
+        return { success: true };
+      }),
+
+    delete: adminProcedure
+      .input(z.object({ userId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        if (input.userId === ctx.user.id) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Você não pode excluir sua própria conta." });
+        }
+        await deleteUser(input.userId);
         return { success: true };
       }),
   }),

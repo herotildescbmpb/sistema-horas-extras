@@ -391,7 +391,7 @@ describe("users.create", () => {
       name: "Novo Servidor",
       email: "novo@cbmpb.pb.gov.br",
       department: "DAL/1",
-      role: "user",
+      role: "chefe",
     });
 
     expect(result).toEqual({ success: true });
@@ -399,7 +399,7 @@ describe("users.create", () => {
       name: "Novo Servidor",
       email: "novo@cbmpb.pb.gov.br",
       department: "DAL/1",
-      role: "user",
+      role: "chefe",
     }));
   });
 
@@ -410,7 +410,7 @@ describe("users.create", () => {
     const caller = appRouter.createCaller(ctx);
 
     await expect(
-      caller.users.create({ name: "Duplicado", email: "dup@cbmpb.pb.gov.br", role: "user" })
+      caller.users.create({ name: "Duplicado", email: "dup@cbmpb.pb.gov.br", role: "chefe" })
     ).rejects.toMatchObject({ code: "CONFLICT" });
   });
 
@@ -419,7 +419,7 @@ describe("users.create", () => {
     const caller = appRouter.createCaller(ctx);
 
     await expect(
-      caller.users.create({ name: "Hack", role: "user" })
+      caller.users.create({ name: "Hack", role: "chefe" })
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 });

@@ -6,7 +6,7 @@ import { z } from "zod";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
-  Users, Search, Edit2, KeyRound, Shield, UserCheck, UserX,
+  Users, Search, Edit2, KeyRound, Shield, UserCheck, UserX, Trash2,
   ChevronUp, ChevronDown, ChevronsUpDown, X, UserPlus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -27,14 +27,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 // ─── Edit schema ──────────────────────────────────────────────────────────────
-const ROLES = ["user", "admin", "chefe", "auxiliar_administrativo"] as const;
+const ROLES = ["admin", "chefe", "auxiliar_administrativo"] as const;
 type RoleValue = typeof ROLES[number];
 
 const ROLE_LABELS: Record<RoleValue, string> = {
   admin: "Admin",
   chefe: "Chefe",
   auxiliar_administrativo: "Auxiliar Administrativo",
-  user: "Usuário",
 };
 
 const editSchema = z.object({
@@ -100,7 +99,7 @@ export default function AdminUsers() {
 
   // ─── State ────────────────────────────────────────────────────────────────
   const [search, setSearch] = useState("");
-  const [filterRole, setFilterRole] = useState<"all" | "admin" | "user">("all");
+  const [filterRole, setFilterRole] = useState<"all" | "admin" | "chefe" | "auxiliar_administrativo" | "user">("all");
   const [filterStatus, setFilterStatus] = useState<"all" | "active" | "inactive">("all");
   const [filterDept, setFilterDept] = useState("all");
   const [sortField, setSortField] = useState<"name" | "department" | "role">("name");
@@ -111,7 +110,18 @@ export default function AdminUsers() {
   const [pwdOpen, setPwdOpen] = useState(false);
   const [pwdTarget, setPwdTarget] = useState<(typeof users)[0] | null>(null);
   const [confirmToggle, setConfirmToggle] = useState<{ user: (typeof users)[0]; active: boolean } | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<(typeof users)[0] | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
+
+  // ─── Delete mutation
+  const deleteUserMutation = trpc.users.delete.useMutation({
+    onSuccess: () => {
+      utils.users.list.invalidate();
+      toast.success("Usuário excluído com sucesso.");
+      setConfirmDelete(null);
+    },
+    onError: (e) => toast.error(e.message),
+  });
 
   // ─── Create mutation ──────────────────────────────────────────────────────
   const createUser = trpc.users.create.useMutation({
@@ -132,7 +142,7 @@ export default function AdminUsers() {
     formState: { errors: createErrors, isSubmitting: createSubmitting },
   } = useForm<CreateForm>({
     resolver: zodResolver(createSchema),
-    defaultValues: { name: "", email: "", department: "", position: "", matricula: "", role: "user" as const },
+    defaultValues: { name: "", email: "", department: "", position: "", matricula: "", role: "chefe" as const },
   });
 
   function onCreateSubmit(data: CreateForm) {
@@ -146,7 +156,7 @@ export default function AdminUsers() {
     formState: { errors, isSubmitting },
   } = useForm<EditForm>({
     resolver: zodResolver(editSchema),
-    defaultValues: { name: "", email: "", department: "", position: "", matricula: "", role: "user" },
+    defaultValues: { name: "", email: "", department: "", position: "", matricula: "", role: "chefe" },
   });
 
   function openEdit(u: (typeof users)[0]) {
@@ -157,7 +167,7 @@ export default function AdminUsers() {
       department: u.department ?? "",
       position: u.position ?? "",
       matricula: u.matricula ?? "",
-      role: u.role,
+      role: (u.role === "user" ? "chefe" : u.role) as "admin" | "chefe" | "auxiliar_administrativo",
     });
     setEditOpen(true);
   }
@@ -262,7 +272,6 @@ export default function AdminUsers() {
                 <SelectItem value="admin">Administrador</SelectItem>
                 <SelectItem value="chefe">Chefe</SelectItem>
                 <SelectItem value="auxiliar_administrativo">Aux. Administrativo</SelectItem>
-                <SelectItem value="user">Usuário</SelectItem>
               </SelectContent>
             </Select>
             <Select value={filterStatus} onValueChange={(v) => setFilterStatus(v as any)}>
@@ -402,8 +411,8 @@ export default function AdminUsers() {
                             Aux. Adm.
                           </Badge>
                         ) : (
-                          <Badge variant="outline" className="text-xs">
-                            Usuário
+                          <Badge variant="outline" className="text-xs text-muted-foreground">
+                            Usuário (legado)
                           </Badge>
                         )}
                       </TableCell>
@@ -471,6 +480,20 @@ export default function AdminUsers() {
                             <TooltipContent>
                               {u.isActive !== false ? "Desativar acesso" : "Reativar acesso"}
                             </TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 gap-1.5 text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
+                                onClick={() => setConfirmDelete(u)}
+                                disabled={u.id === me?.id}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" /> Excluir
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Excluir usuário permanentemente</TooltipContent>
                           </Tooltip>
                         </div>
                       </TableCell>
@@ -743,6 +766,37 @@ export default function AdminUsers() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Delete Confirm Modal ──────────────────────────────────────────────────────────────────────────────────── */}
+      <Dialog open={!!confirmDelete} onOpenChange={() => setConfirmDelete(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <Trash2 className="h-4 w-4" /> Excluir usuário
+            </DialogTitle>
+            <DialogDescription>
+              Tem certeza que deseja excluir permanentemente{" "}
+              <strong>{confirmDelete?.name}</strong>? Esta ação não pode ser desfeita e todos os dados do usuário serão removidos.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setConfirmDelete(null)}>
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={deleteUserMutation.isPending}
+              onClick={() => {
+                if (!confirmDelete) return;
+                deleteUserMutation.mutate({ userId: confirmDelete.id });
+              }}
+            >
+              <Trash2 className="h-4 w-4 mr-1.5" />
+              {deleteUserMutation.isPending ? "Excluindo..." : "Excluir permanentemente"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
