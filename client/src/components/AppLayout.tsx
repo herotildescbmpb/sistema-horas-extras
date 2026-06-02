@@ -45,7 +45,6 @@ const navItems: NavItem[] = [
   { label: "Dashboard", href: "/", icon: LayoutDashboard },
   { label: "Minhas Horas", href: "/horas", icon: Clock },
   { label: "Novo Registro", href: "/novo", icon: ClipboardList },
-  { label: "Escalas em Lote", href: "/escalas", icon: CalendarRange },
   { label: "Relatórios", href: "/relatorios", icon: BarChart3 },
   { label: "Meu Setor", href: "/meu-setor", icon: Building2, chefeOnly: true },
   { label: "Painel Admin", href: "/admin", icon: Shield, adminOnly: true },
