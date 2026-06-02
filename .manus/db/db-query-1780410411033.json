@@ -1,0 +1,9 @@
+{
+  "query": "UPDATE users SET department = NULL WHERE email = 'admin@cbmpb.pb.gov.br' AND loginMethod = 'pre-cadastro';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4XMYXLTg6g9ZctA.83aa4a08e73e --database cDx3jwjHrzRKbmDZmbrJYX --execute UPDATE users SET department = NULL WHERE email = 'admin@cbmpb.pb.gov.br' AND loginMethod = 'pre-cadastro';",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 260
+}

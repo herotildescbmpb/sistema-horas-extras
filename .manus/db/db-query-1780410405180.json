@@ -1,0 +1,73 @@
+{
+  "query": "SELECT name, email, role, department, isActive FROM users WHERE loginMethod = 'pre-cadastro' ORDER BY id;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4XMYXLTg6g9ZctA.83aa4a08e73e --database cDx3jwjHrzRKbmDZmbrJYX --execute SELECT name, email, role, department, isActive FROM users WHERE loginMethod = 'pre-cadastro' ORDER BY id;",
+  "rows": [
+    {
+      "name": "Herotildes Oliveira Wanderley de Araújo",
+      "email": "herotildescbmpb@gmail.com",
+      "role": "admin",
+      "department": "Gabinete do Diretor de Apoio Logístico",
+      "isActive": "1"
+    },
+    {
+      "name": "Administrador DAL",
+      "email": "admin@cbmpb.pb.gov.br",
+      "role": "admin",
+      "department": "NULL",
+      "isActive": "1"
+    },
+    {
+      "name": "Kaliny Simony Fideles de Araújo Morais",
+      "email": "kalinysimony@gmail.com",
+      "role": "user",
+      "department": "Gabinete do Diretor de Apoio Logístico",
+      "isActive": "1"
+    },
+    {
+      "name": "Keoma do Nascimento Silva",
+      "email": "omoicano@hotmail.com",
+      "role": "admin",
+      "department": "Gabinete do Diretor de Apoio Logístico",
+      "isActive": "1"
+    },
+    {
+      "name": "Hedwing Tayse Paiva de Queiroz",
+      "email": "taysepqueiroz@gmail.com",
+      "role": "user",
+      "department": "CSL – Centro de Suprimento Logístico",
+      "isActive": "1"
+    },
+    {
+      "name": "Jose Fragoso da Silva Neto",
+      "email": "fragoso.neto.jf@gmail.com",
+      "role": "user",
+      "department": "CMAV – Centro de Controle e Manutenção de Viaturas",
+      "isActive": "1"
+    },
+    {
+      "name": "Matheus Pinheiro do Amaral",
+      "email": "01matheus@gmail.com",
+      "role": "user",
+      "department": "DAL/1 – Seção de Aquisições, Especificações e Registros",
+      "isActive": "1"
+    },
+    {
+      "name": "Igor Soares Leal",
+      "email": "dal4cbmpb193@gmail.com",
+      "role": "user",
+      "department": "CAEO – Centro de Arquitetura, Engenharia e Obras",
+      "isActive": "1"
+    },
+    {
+      "name": "Síntia Barbosa Sena",
+      "email": "sintiasenna@gmail.com",
+      "role": "user",
+      "department": "DAL/3 – Seção de Apoio à Administração",
+      "isActive": "1"
+    }
+  ],
+  "messages": [],
+  "stdout": "name\temail\trole\tdepartment\tisActive\nHerotildes Oliveira Wanderley de Araújo\therotildescbmpb@gmail.com\tadmin\tGabinete do Diretor de Apoio Logístico\t1\nAdministrador DAL\tadmin@cbmpb.pb.gov.br\tadmin\tNULL\t1\nKaliny Simony Fideles de Araújo Morais\tkalinysimony@gmail.com\tuser\tGabinete do Diretor de Apoio Logístico\t1\nKeoma do Nascimento Silva\tomoicano@hotmail.com\tadmin\tGabinete do Diretor de Apoio Logístico\t1\nHedwing Tayse Paiva de Queiroz\ttaysepqueiroz@gmail.com\tuser\tCSL – Centro de Suprimento Logístico\t1\nJose Fragoso da Silva Neto\tfragoso.neto.jf@gmail.com\tuser\tCMAV – Centro de Controle e Manutenção de Viaturas\t1\nMatheus Pinheiro do Amaral\t01matheus@gmail.com\tuser\tDAL/1 – Seção de Aquisições, Especificações e Registros\t1\nIgor Soares Leal\tdal4cbmpb193@gmail.com\tuser\tCAEO – Centro de Arquitetura, Engenharia e Obras\t1\nSíntia Barbosa Sena\tsintiasenna@gmail.com\tuser\tDAL/3 – Seção de Apoio à Administração\t1\n",
+  "stderr": "",
+  "execution_time_ms": 407
+}

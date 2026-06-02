@@ -98,6 +98,34 @@ export async function adminUpdateUser(
   await db.update(users).set(data).where(eq(users.id, userId));
 }
 
+export async function createUser(
+  data: { name: string; email?: string; department?: string; position?: string; role: "user" | "admin"; matricula?: string }
+) {
+  const db = await getDb();
+  if (!db) return;
+  const { nanoid } = await import("nanoid");
+  const openId = `pre_${nanoid(12)}`;
+  await db.insert(users).values({
+    openId,
+    name: data.name,
+    email: data.email ?? null,
+    loginMethod: "pre-cadastro",
+    role: data.role,
+    department: data.department ?? null,
+    position: data.position ?? null,
+    matricula: data.matricula ?? null,
+    isActive: true,
+    lastSignedIn: new Date(),
+  });
+}
+
+export async function getUserByEmail(email: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
+  return result[0];
+}
+
 export async function updateUserProfile(
   userId: number,
   data: { name?: string; department?: string; position?: string; hourlyRate?: string; matricula?: string }

@@ -7,7 +7,7 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Users, Search, Edit2, KeyRound, Shield, UserCheck, UserX,
-  ChevronUp, ChevronDown, ChevronsUpDown, X,
+  ChevronUp, ChevronDown, ChevronsUpDown, X, UserPlus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,6 +36,17 @@ const editSchema = z.object({
   role: z.enum(["user", "admin"]),
 });
 type EditForm = z.infer<typeof editSchema>;
+
+// ─── Create schema ─────────────────────────────────────────────────────────────
+const createSchema = z.object({
+  name: z.string().min(2, "Nome obrigatório"),
+  email: z.string().email("E-mail inválido").optional().or(z.literal("")),
+  department: z.string().optional(),
+  position: z.string().optional(),
+  matricula: z.string().optional(),
+  role: z.enum(["user", "admin"]),
+});
+type CreateForm = z.infer<typeof createSchema>;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function initials(name?: string | null) {
@@ -90,6 +101,34 @@ export default function AdminUsers() {
   const [pwdOpen, setPwdOpen] = useState(false);
   const [pwdTarget, setPwdTarget] = useState<(typeof users)[0] | null>(null);
   const [confirmToggle, setConfirmToggle] = useState<{ user: (typeof users)[0]; active: boolean } | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+
+  // ─── Create mutation ──────────────────────────────────────────────────────
+  const createUser = trpc.users.create.useMutation({
+    onSuccess: () => {
+      utils.users.list.invalidate();
+      toast.success("Usuário cadastrado com sucesso.");
+      setCreateOpen(false);
+      createReset();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const {
+    register: createRegister,
+    handleSubmit: createHandleSubmit,
+    control: createControl,
+    reset: createReset,
+    formState: { errors: createErrors, isSubmitting: createSubmitting },
+  } = useForm<CreateForm>({
+    resolver: zodResolver(createSchema),
+    defaultValues: { name: "", email: "", department: "", position: "", matricula: "", role: "user" as const },
+  });
+
+  function onCreateSubmit(data: CreateForm) {
+    const dept = data.department === "none_dept" ? undefined : data.department;
+    createUser.mutate({ ...data, department: dept, email: data.email || undefined });
+  }
 
   // ─── Edit form ────────────────────────────────────────────────────────────
   const {
@@ -182,6 +221,13 @@ export default function AdminUsers() {
             {adminCount !== 1 ? "es" : ""}
           </p>
         </div>
+        <Button
+          onClick={() => { createReset(); setCreateOpen(true); }}
+          className="gap-2"
+        >
+          <UserPlus className="h-4 w-4" />
+          Novo Usuário
+        </Button>
       </div>
 
       {/* Filters */}
@@ -578,6 +624,101 @@ export default function AdminUsers() {
               )}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* ── Create User Modal ───────────────────────────────────────────────────────────────── */}
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserPlus className="h-4 w-4 text-primary" />
+              Cadastrar Novo Usuário
+            </DialogTitle>
+            <DialogDescription>
+              Preencha os dados do novo usuário. Ele poderá acessar o sistema após o primeiro login com o e-mail cadastrado.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={createHandleSubmit(onCreateSubmit)} className="space-y-4 mt-2">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2">
+                <Label className="text-xs font-medium mb-1.5 block">Nome completo *</Label>
+                <Input {...createRegister("name")} placeholder="Nome do usuário" />
+                {createErrors.name && (
+                  <p className="text-xs text-destructive mt-1">{createErrors.name.message}</p>
+                )}
+              </div>
+              <div className="col-span-2">
+                <Label className="text-xs font-medium mb-1.5 block">E-mail</Label>
+                <Input {...createRegister("email")} type="email" placeholder="email@exemplo.com" />
+                {createErrors.email && (
+                  <p className="text-xs text-destructive mt-1">{createErrors.email.message}</p>
+                )}
+              </div>
+              <div>
+                <Label className="text-xs font-medium mb-1.5 block">Matrícula</Label>
+                <Input {...createRegister("matricula")} placeholder="Ex: 527352" />
+              </div>
+              <div>
+                <Label className="text-xs font-medium mb-1.5 block">Posto / Graduação</Label>
+                <Input {...createRegister("position")} placeholder="Ex: Capitão" />
+              </div>
+              <div>
+                <Label className="text-xs font-medium mb-1.5 block">Setor</Label>
+                <Controller
+                  name="department"
+                  control={createControl}
+                  render={({ field }) => (
+                    <Select onValueChange={field.onChange} value={field.value ?? ""}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o setor" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none_dept">Nenhum</SelectItem>
+                        {departments.map((d) => (
+                          <SelectItem key={d.id} value={d.name}>
+                            {d.shortName ?? d.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </div>
+              <div>
+                <Label className="text-xs font-medium mb-1.5 block">Perfil *</Label>
+                <Controller
+                  name="role"
+                  control={createControl}
+                  render={({ field }) => (
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="user">Usuário</SelectItem>
+                        <SelectItem value="admin">Administrador</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                {createErrors.role && (
+                  <p className="text-xs text-destructive mt-1">{createErrors.role.message}</p>
+                )}
+              </div>
+            </div>
+            <div className="bg-muted/40 rounded-lg p-3 text-xs text-muted-foreground">
+              <strong className="text-foreground">Observação:</strong> O usuário será pré-cadastrado e poderá acessar o sistema realizando login com o e-mail informado.
+            </div>
+            <DialogFooter className="gap-2 pt-2">
+              <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={createSubmitting || createUser.isPending} className="gap-2">
+                <UserPlus className="h-4 w-4" />
+                {createUser.isPending ? "Cadastrando..." : "Cadastrar Usuário"}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>

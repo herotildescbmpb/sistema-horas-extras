@@ -6,6 +6,8 @@ import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import {
   adminUpdateUser,
+  createUser,
+  getUserByEmail,
   createDepartment,
   createOvertimeRecord,
   deleteOvertimeRecord,
@@ -140,6 +142,36 @@ export const appRouter = router({
     setRole: adminProcedure
       .input(z.object({ userId: z.number(), role: z.enum(["user", "admin"]) }))
       .mutation(({ input }) => setUserRole(input.userId, input.role)),
+
+    create: adminProcedure
+      .input(
+        z.object({
+          name: z.string().min(2, "Nome obrigatório"),
+          email: z.string().email("E-mail inválido").optional().or(z.literal("")),
+          department: z.string().optional(),
+          position: z.string().optional(),
+          role: z.enum(["user", "admin"]).default("user"),
+          matricula: z.string().optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        // Verificar e-mail duplicado
+        if (input.email) {
+          const existing = await getUserByEmail(input.email);
+          if (existing) {
+            throw new TRPCError({ code: "CONFLICT", message: "Já existe um usuário com este e-mail." });
+          }
+        }
+        await createUser({
+          name: input.name,
+          email: input.email || undefined,
+          department: input.department || undefined,
+          position: input.position || undefined,
+          role: input.role,
+          matricula: input.matricula || undefined,
+        });
+        return { success: true };
+      }),
   }),
 
   // ─── Overtime Records ─────────────────────────────────────────────────────────

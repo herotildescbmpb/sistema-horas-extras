@@ -76,3 +76,9 @@
 - [x] Criar funcionalidade de redefinição de senha pelo admin
 - [x] Criar página AdminDepartments com lista de setores e atribuição de chefe
 - [x] Atualizar AppLayout com novos itens de navegação
+
+## Cadastro de Usuários Iniciais (v5)
+- [x] Inserir os 9 usuários da imagem no banco com nome, e-mail, setor e perfil corretos
+- [x] Criar endpoint tRPC `users.create` (admin only) para cadastrar novos usuários pré-cadastrados
+- [x] Criar modal de cadastro de novo usuário no AdminUsers com campos: Nome, E-mail, Setor, Perfil, Matrícula, Posto
+- [x] Adicionar botão "+ Novo Usuário" no cabeçalho da tela AdminUsers

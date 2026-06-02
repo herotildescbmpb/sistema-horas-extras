@@ -20,6 +20,8 @@ vi.mock("./db", () => ({
   updateUserProfile: vi.fn().mockResolvedValue(undefined),
   setUserRole: vi.fn().mockResolvedValue(undefined),
   adminUpdateUser: vi.fn().mockResolvedValue(undefined),
+  createUser: vi.fn().mockResolvedValue(undefined),
+  getUserByEmail: vi.fn().mockResolvedValue(undefined),
   setUserActive: vi.fn().mockResolvedValue(undefined),
   setDepartmentChefe: vi.fn().mockResolvedValue(undefined),
   updateDepartment: vi.fn().mockResolvedValue(undefined),
@@ -354,6 +356,51 @@ describe("departments.setChefe", () => {
 
     await expect(
       caller.departments.setChefe({ departmentId: 1, chefeId: 5 })
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+});
+
+// ─── users.create tests ───────────────────────────────────────────────────────
+describe("users.create", () => {
+  it("allows admin to create a new user", async () => {
+    const { createUser, getUserByEmail } = await import("./db");
+    (getUserByEmail as ReturnType<typeof vi.fn>).mockResolvedValueOnce(undefined);
+    const ctx = makeCtx("admin");
+    const caller = appRouter.createCaller(ctx);
+
+    const result = await caller.users.create({
+      name: "Novo Servidor",
+      email: "novo@cbmpb.pb.gov.br",
+      department: "DAL/1",
+      role: "user",
+    });
+
+    expect(result).toEqual({ success: true });
+    expect(createUser).toHaveBeenCalledWith(expect.objectContaining({
+      name: "Novo Servidor",
+      email: "novo@cbmpb.pb.gov.br",
+      department: "DAL/1",
+      role: "user",
+    }));
+  });
+
+  it("throws CONFLICT when email already exists", async () => {
+    const { getUserByEmail } = await import("./db");
+    (getUserByEmail as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ id: 99, email: "dup@cbmpb.pb.gov.br" });
+    const ctx = makeCtx("admin");
+    const caller = appRouter.createCaller(ctx);
+
+    await expect(
+      caller.users.create({ name: "Duplicado", email: "dup@cbmpb.pb.gov.br", role: "user" })
+    ).rejects.toMatchObject({ code: "CONFLICT" });
+  });
+
+  it("throws FORBIDDEN when non-admin tries to create user", async () => {
+    const ctx = makeCtx("user");
+    const caller = appRouter.createCaller(ctx);
+
+    await expect(
+      caller.users.create({ name: "Hack", role: "user" })
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 });
