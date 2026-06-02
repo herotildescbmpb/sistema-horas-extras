@@ -121,3 +121,14 @@
 - [x] Endpoint tRPC `chefe.myDepartment`: retorna o setor onde o usuário é chefe
 - [x] Painel do chefe de setor (MeuSetor.tsx): listagem de registros e escalas dos usuários do seu setor (rascunho e lançado)
 - [x] Navegação: adicionar item "Meu Setor" no menu para chefes
+
+## Sistema de Notificações Visuais para Chefe (v10)
+- [x] Criar tabela `notifications` no schema Drizzle (id, userId, type, title, body, read, createdAt, relatedId, relatedType)
+- [x] Gerar migration e aplicar via webdev_execute_sql
+- [x] Criar helpers em server/db.ts: createNotification, getNotificationsByUser, markNotificationRead, markAllRead
+- [x] Criar endpoints tRPC: notifications.list, notifications.markRead, notifications.markAllRead, notifications.unreadCount
+- [x] Disparar notificação ao chefe ao lançar escala (escalas.launch)
+- [x] Disparar notificação ao chefe ao criar registro único (overtime.create)
+- [x] Criar componente NotificationBell na sidebar com badge de contagem e polling a cada 30s
+- [x] Criar painel dropdown de notificações com lista, marcar como lida e link para o registro
+- [x] Polling automático a cada 30s para atualizar contagem sem recarregar a página

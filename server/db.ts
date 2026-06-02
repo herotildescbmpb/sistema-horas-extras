@@ -8,8 +8,10 @@ import {
   InsertDepartment,
   InsertEscala,
   InsertEscalaItem,
+  InsertNotification,
   InsertOvertimeRecord,
   InsertUser,
+  notifications,
   overtimeRecords,
   servidores,
   users,
@@ -713,4 +715,71 @@ export async function getEscalasByDepartment(
     .innerJoin(users, eq(escalas.userId, users.id))
     .where(and(...conditions))
     .orderBy(desc(escalas.createdAt));
+}
+
+// ─── Notificações ─────────────────────────────────────────────────────────────
+
+export async function createNotification(data: InsertNotification) {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(notifications).values(data);
+}
+
+export async function getNotificationsByUser(userId: number, limit = 30) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(notifications)
+    .where(eq(notifications.userId, userId))
+    .orderBy(desc(notifications.createdAt))
+    .limit(limit);
+}
+
+export async function getUnreadCount(userId: number): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  const result = await db
+    .select({ count: sql<number>`COUNT(*)` })
+    .from(notifications)
+    .where(and(eq(notifications.userId, userId), eq(notifications.read, false)));
+  return Number(result[0]?.count ?? 0);
+}
+
+export async function markNotificationRead(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db
+    .update(notifications)
+    .set({ read: true })
+    .where(and(eq(notifications.id, id), eq(notifications.userId, userId)));
+}
+
+export async function markAllNotificationsRead(userId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db
+    .update(notifications)
+    .set({ read: true })
+    .where(and(eq(notifications.userId, userId), eq(notifications.read, false)));
+}
+
+/**
+ * Encontra o chefe do setor pelo nome do departamento e cria uma notificação para ele.
+ * Se o departamento não tiver chefe, não faz nada.
+ */
+export async function notifyChefe(
+  departmentName: string,
+  notification: Omit<InsertNotification, "userId">
+) {
+  const db = await getDb();
+  if (!db) return;
+  const dept = await db
+    .select({ chefeId: departments.chefeId })
+    .from(departments)
+    .where(and(eq(departments.name, departmentName), eq(departments.active, true)))
+    .limit(1);
+  const chefeId = dept[0]?.chefeId;
+  if (!chefeId) return; // setor sem chefe cadastrado
+  await db.insert(notifications).values({ ...notification, userId: chefeId });
 }

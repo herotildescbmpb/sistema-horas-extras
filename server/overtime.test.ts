@@ -30,6 +30,25 @@ vi.mock("./db", () => ({
   getServidorByMatricula: vi.fn().mockResolvedValue(null),
   upsertUser: vi.fn().mockResolvedValue(undefined),
   getUserByOpenId: vi.fn().mockResolvedValue(undefined),
+  // Chefe / Notifications
+  getDepartmentByChefe: vi.fn().mockResolvedValue(null),
+  getOvertimeRecordsByDepartment: vi.fn().mockResolvedValue([]),
+  getEscalasByDepartment: vi.fn().mockResolvedValue([]),
+  createNotification: vi.fn().mockResolvedValue(undefined),
+  getNotificationsByUser: vi.fn().mockResolvedValue([]),
+  getUnreadCount: vi.fn().mockResolvedValue(0),
+  markNotificationRead: vi.fn().mockResolvedValue(undefined),
+  markAllNotificationsRead: vi.fn().mockResolvedValue(undefined),
+  notifyChefe: vi.fn().mockResolvedValue(undefined),
+  // Escalas
+  getAllEscalas: vi.fn().mockResolvedValue([]),
+  getEscalasByUser: vi.fn().mockResolvedValue([]),
+  getEscalaById: vi.fn().mockResolvedValue(null),
+  createEscala: vi.fn().mockResolvedValue(1),
+  launchEscala: vi.fn().mockResolvedValue(undefined),
+  updateEscalaItem: vi.fn().mockResolvedValue(undefined),
+  updateEscalaStatus: vi.fn().mockResolvedValue(undefined),
+  duplicateEscala: vi.fn().mockResolvedValue({ id: 2, mes: 7, ano: 2026 }),
 }));
 
 function makeCtx(role: "user" | "admin" = "user"): TrpcContext {

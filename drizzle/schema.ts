@@ -126,3 +126,21 @@ export const escalaItems = mysqlTable("escala_items", {
 
 export type EscalaItem = typeof escalaItems.$inferSelect;
 export type InsertEscalaItem = typeof escalaItems.$inferInsert;
+
+// Notificações para chefes de setor
+export const notifications = mysqlTable("notifications", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),          // destinatário (chefe do setor)
+  type: varchar("type", { length: 64 }).notNull(), // "escala_lancada" | "registro_criado"
+  title: varchar("title", { length: 255 }).notNull(),
+  body: text("body"),
+  read: boolean("read").default(false).notNull(),
+  relatedId: int("relatedId"),              // id da escala ou do overtime_record
+  relatedType: varchar("relatedType", { length: 32 }), // "escala" | "overtime"
+  fromUserId: int("fromUserId"),            // quem gerou o evento
+  fromUserName: varchar("fromUserName", { length: 255 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Notification = typeof notifications.$inferSelect;
+export type InsertNotification = typeof notifications.$inferInsert;

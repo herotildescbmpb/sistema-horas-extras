@@ -31,6 +31,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
+import NotificationBell from "@/components/NotificationBell";
 
 interface NavItem {
   label: string;
@@ -166,6 +167,11 @@ export default function AppLayout({ children }: AppLayoutProps) {
           );
         })}
       </nav>
+
+      {/* Notification Bell */}
+      <div className={cn("px-2 py-2 flex", collapsed ? "justify-center" : "justify-end pr-3")}>
+        <NotificationBell collapsed={collapsed} />
+      </div>
 
       <Separator className="bg-sidebar-border/50 mx-3" />
 

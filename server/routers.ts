@@ -40,6 +40,12 @@ import {
   getDepartmentByChefe,
   getOvertimeRecordsByDepartment,
   getEscalasByDepartment,
+  createNotification,
+  getNotificationsByUser,
+  getUnreadCount,
+  markNotificationRead,
+  markAllNotificationsRead,
+  notifyChefe,
 } from "./db";
 
 // ─── Admin guard ──────────────────────────────────────────────────────────────
@@ -243,10 +249,11 @@ export const appRouter = router({
           department: z.string().optional(),
         })
       )
-      .mutation(({ ctx, input }) => {
+      .mutation(async ({ ctx, input }) => {
         const totalMinutes = input.totalMinutes ?? calcMinutes(input.startTime, input.endTime);
         const multiplier = MULTIPLIERS[input.dayType];
-        return createOvertimeRecord({
+        const dept = input.department ?? (ctx.user as any).department ?? undefined;
+        const record = await createOvertimeRecord({
           userId: ctx.user.id,
           tipoEscala: input.tipoEscala,
           servidor: input.servidor ?? (ctx.user as any).matricula ?? undefined,
@@ -261,8 +268,23 @@ export const appRouter = router({
           multiplier,
           reason: input.reason,
           project: input.project,
-          department: input.department ?? (ctx.user as any).department ?? undefined,
+          department: dept,
         });
+        // Notificar chefe do setor
+        if (dept) {
+          const [day, month, year] = input.date.split("-").reverse();
+          const dateLabel = `${day}/${month}/${year}`;
+          await notifyChefe(dept, {
+            type: "registro_criado",
+            title: "Novo registro de horas extras",
+            body: `${ctx.user.name ?? "Um militar"} registrou horas extras em ${dateLabel} (${input.tipoEscala ?? ""}).`,
+            relatedId: (record as any)?.insertId ?? undefined,
+            relatedType: "overtime",
+            fromUserId: ctx.user.id,
+            fromUserName: ctx.user.name ?? undefined,
+          }).catch(() => {/* silencioso */});
+        }
+        return record;
       }),
 
     update: protectedProcedure
@@ -414,6 +436,31 @@ export const appRouter = router({
       }),
   }),
 
+  // ─── Notificações ─────────────────────────────────────────────────────────
+  notifications: router({
+    /** Lista as últimas 30 notificações do usuário logado */
+    list: protectedProcedure.query(({ ctx }) =>
+      getNotificationsByUser(ctx.user.id)
+    ),
+
+    /** Contagem de não lidas */
+    unreadCount: protectedProcedure.query(({ ctx }) =>
+      getUnreadCount(ctx.user.id)
+    ),
+
+    /** Marca uma notificação como lida */
+    markRead: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(({ ctx, input }) =>
+        markNotificationRead(input.id, ctx.user.id)
+      ),
+
+    /** Marca todas as notificações como lidas */
+    markAllRead: protectedProcedure.mutation(({ ctx }) =>
+      markAllNotificationsRead(ctx.user.id)
+    ),
+  }),
+
   // ─── Escalas em Lote ─────────────────────────────────────────────────────────
   escalas: router({
     list: protectedProcedure.query(({ ctx }) =>
@@ -493,6 +540,21 @@ export const appRouter = router({
           throw new TRPCError({ code: "BAD_REQUEST", message: "Apenas rascunhos podem ser lançados." });
         }
         await launchEscala(input.id, ctx.user.id);
+        // Notificar chefe do setor
+        const dept = escala.department;
+        if (dept) {
+          const meses = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+          const mesLabel = `${meses[(escala.mes ?? 1) - 1] ?? escala.mes}/${escala.ano}`;
+          await notifyChefe(dept, {
+            type: "escala_lancada",
+            title: "Nova escala lançada",
+            body: `${ctx.user.name ?? "Um militar"} lançou uma escala de ${escala.tipoEscala} para ${mesLabel}.`,
+            relatedId: input.id,
+            relatedType: "escala",
+            fromUserId: ctx.user.id,
+            fromUserName: ctx.user.name ?? undefined,
+          }).catch(() => {/* silencioso */});
+        }
         return { success: true };
       }),
 
