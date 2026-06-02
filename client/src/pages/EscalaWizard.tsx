@@ -19,6 +19,20 @@ import {
 } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 
+// ─── Paleta de cores distintas por militar ───────────────────────────────────
+const MILITAR_COLORS = [
+  { bg: "bg-blue-500",   hex: "#3b82f6", light: "bg-blue-50",   border: "border-blue-200",   text: "text-blue-700"   },
+  { bg: "bg-emerald-500", hex: "#10b981", light: "bg-emerald-50", border: "border-emerald-200", text: "text-emerald-700" },
+  { bg: "bg-orange-500", hex: "#f97316", light: "bg-orange-50",  border: "border-orange-200",  text: "text-orange-700"  },
+  { bg: "bg-purple-500", hex: "#a855f7", light: "bg-purple-50",  border: "border-purple-200",  text: "text-purple-700"  },
+  { bg: "bg-rose-500",   hex: "#f43f5e", light: "bg-rose-50",   border: "border-rose-200",   text: "text-rose-700"   },
+  { bg: "bg-cyan-500",   hex: "#06b6d4", light: "bg-cyan-50",   border: "border-cyan-200",   text: "text-cyan-700"   },
+  { bg: "bg-amber-500",  hex: "#f59e0b", light: "bg-amber-50",  border: "border-amber-200",  text: "text-amber-700"  },
+  { bg: "bg-teal-500",   hex: "#14b8a6", light: "bg-teal-50",   border: "border-teal-200",   text: "text-teal-700"   },
+  { bg: "bg-indigo-500", hex: "#6366f1", light: "bg-indigo-50", border: "border-indigo-200", text: "text-indigo-700" },
+  { bg: "bg-pink-500",   hex: "#ec4899", light: "bg-pink-50",   border: "border-pink-200",   text: "text-pink-700"   },
+];
+
 // ─── Constantes ───────────────────────────────────────────────────────────────
 const TIPOS_ESCALA = [
   "Expediente", "Formatura", "Instrução e Treinamento",
@@ -135,7 +149,7 @@ interface EditingRecord {
 // ─── Calendário Mini ──────────────────────────────────────────────────────────
 function MiniCalendar({
   mes, ano, markedDays,
-}: { mes: number; ano: number; markedDays: Map<number, string[]> }) {
+}: { mes: number; ano: number; markedDays: Map<number, Array<{nome: string; colorIdx: number}>> }) {
   const daysInMonth = new Date(ano, mes, 0).getDate();
   const firstDayOfWeek = new Date(ano, mes - 1, 1).getDay();
 
@@ -156,15 +170,14 @@ function MiniCalendar({
           const dow = date.getDay();
           const isWeekend = dow === 0 || dow === 6;
           const isFer = isFeriado(date);
-          const names = markedDays.get(day) ?? [];
-          const hasMarks = names.length > 0;
-
+          const entries = markedDays.get(day) ?? [];
+          const hasMarks = entries.length > 0;
           return (
             <div
               key={day}
-              className={`relative rounded p-1 text-center min-h-[36px] border transition-all
+              className={`relative rounded p-1 text-center min-h-[44px] border transition-all
                 ${hasMarks
-                  ? "bg-primary/10 border-primary/40"
+                  ? "bg-white border-gray-300 shadow-sm"
                   : isFer
                     ? "bg-amber-50 border-amber-200"
                     : isWeekend
@@ -173,16 +186,22 @@ function MiniCalendar({
                 }
               `}
             >
-              <div className={`text-[11px] font-bold ${hasMarks ? "text-primary" : isWeekend || isFer ? "text-blue-600" : "text-foreground"}`}>
+              <div className={`text-[11px] font-bold mb-0.5 ${hasMarks ? "text-gray-800" : isWeekend || isFer ? "text-blue-600" : "text-foreground"}`}>
                 {day}
               </div>
               {hasMarks && (
-                <div className="flex flex-wrap gap-0.5 justify-center mt-0.5">
-                  {names.slice(0, 3).map((n, ni) => (
-                    <div key={ni} className="w-2 h-2 rounded-full bg-primary" title={n} />
-                  ))}
-                  {names.length > 3 && (
-                    <div className="text-[8px] text-primary font-bold">+{names.length - 3}</div>
+                <div className="flex flex-col gap-0.5">
+                  {entries.slice(0, 3).map((e, ni) => {
+                    const c = MILITAR_COLORS[e.colorIdx % MILITAR_COLORS.length];
+                    const firstName = e.nome.split(" ")[0];
+                    return (
+                      <div key={ni} className={`text-[8px] font-semibold rounded px-0.5 truncate ${c.bg} text-white leading-tight`} title={e.nome}>
+                        {firstName}
+                      </div>
+                    );
+                  })}
+                  {entries.length > 3 && (
+                    <div className="text-[8px] text-muted-foreground font-bold">+{entries.length - 3}</div>
                   )}
                 </div>
               )}
@@ -299,13 +318,13 @@ export default function EscalaWizard() {
 
   // ── Mapa de dias marcados para o calendário de revisão ──
   const markedDaysMap = useMemo(() => {
-    const map = new Map<number, string[]>();
-    for (const m of militares) {
+    const map = new Map<number, Array<{nome: string; colorIdx: number}>>();
+    militares.forEach((m, idx) => {
       for (const day of Array.from(m.selectedDays)) {
         const existing = map.get(day) ?? [];
-        map.set(day, [...existing, m.nome || m.matricula]);
+        map.set(day, [...existing, { nome: m.nome || m.matricula, colorIdx: idx }]);
       }
-    }
+    });
     return map;
   }, [militares]);
 
@@ -429,25 +448,53 @@ export default function EscalaWizard() {
       return `<th style="text-align:center;padding:4px 6px;background:${bg};font-size:11px">${String(day).padStart(2,"0")}/${String(mes).padStart(2,"0")}<br/><span style="font-weight:400;font-size:9px">${DIAS_SEMANA_SHORT[dow]}</span></th>`;
     });
 
+    const colorSwatches = militaresValidos.map((m, idx) => {
+      const hexColors = ["#3b82f6","#10b981","#f97316","#a855f7","#f43f5e","#06b6d4","#f59e0b","#14b8a6","#6366f1","#ec4899"];
+      const hex = hexColors[idx % hexColors.length];
+      return `<span style="display:inline-flex;align-items:center;gap:4px;margin-right:12px;font-size:11px">
+        <span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:${hex}"></span>${m.posto} ${m.nome}
+      </span>`;
+    }).join("");
+
     const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
       <title>Escala — ${tipoEscala} — ${MESES[mes-1]}/${ano}</title>
-      <style>body{font-family:Arial,sans-serif;padding:20px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:4px 6px}th{background:#1a3a5c;color:#fff}@media print{button{display:none}}</style>
+      <style>
+        * { box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; padding: 24px; color: #222; }
+        h2 { color: #1a3a5c; margin: 0 0 6px 0; font-size: 18px; }
+        .meta { font-size: 12px; color: #555; margin: 2px 0; }
+        .legend { margin: 10px 0 14px 0; padding: 8px 12px; background: #f8f9fa; border-radius: 6px; border: 1px solid #e2e8f0; }
+        table { border-collapse: collapse; width: 100%; margin-top: 4px; font-size: 11px; }
+        th, td { border: 1px solid #d1d5db; padding: 5px 6px; }
+        thead th { background: #1a3a5c; color: #fff; font-weight: 600; text-align: center; }
+        thead th:first-child { text-align: left; }
+        tbody tr:nth-child(even) { background: #f9fafb; }
+        tbody tr:hover { background: #eff6ff; }
+        .total-col { font-weight: 700; color: #1a3a5c; text-align: center; }
+        .footer { font-size: 10px; color: #999; margin-top: 16px; border-top: 1px solid #e5e7eb; padding-top: 8px; }
+        @media print {
+          body { padding: 12px; }
+          @page { size: A4 landscape; margin: 12mm; }
+          table { font-size: 9px; }
+          th, td { padding: 3px 4px; }
+        }
+      </style>
     </head><body>
-      <h2 style="color:#1a3a5c;margin-bottom:4px">Escala — ${tipoEscala}</h2>
-      <p style="margin:2px 0;color:#555">Período: ${MESES[mes-1]}/${ano} &nbsp;|&nbsp; Setor: ${department} &nbsp;|&nbsp; Função: ${funcao}</p>
-      <p style="margin:2px 0;color:#555">Horário padrão: ${globalStartTime} às ${globalEndTime} &nbsp;|&nbsp; Justificativa: ${justificativa}</p>
-      <br/>
+      <h2>CBMPB — Escala de ${tipoEscala}</h2>
+      <p class="meta">Período: <strong>${MESES[mes-1]}/${ano}</strong> &nbsp;|&nbsp; Setor: <strong>${department}</strong> &nbsp;|&nbsp; Função: <strong>${funcao}</strong></p>
+      <p class="meta">Horário padrão: <strong>${globalStartTime} às ${globalEndTime}</strong> &nbsp;|&nbsp; Justificativa: ${justificativa}</p>
+      <div class="legend"><strong style="font-size:11px;color:#1a3a5c">Militares:</strong> ${colorSwatches}</div>
       <table>
         <thead><tr>
-          <th style="text-align:left">Militar</th>
+          <th style="text-align:left;min-width:140px">Militar</th>
           <th>Matrícula</th>
           ${headerCells.join("")}
           <th>Total</th>
         </tr></thead>
         <tbody>${rows.join("")}</tbody>
       </table>
-      <br/><p style="font-size:11px;color:#999">Gerado em ${new Date().toLocaleString("pt-BR")}</p>
-      <script>window.onload=()=>window.print()</script>
+      <div class="footer">Gerado em ${new Date().toLocaleString("pt-BR")} &nbsp;—&nbsp; Sistema de Horas Extras DAL/CBMPB</div>
+      <script>window.onload = function() { setTimeout(function(){ window.print(); }, 300); }</script>
     </body></html>`;
 
     const win = window.open("", "_blank");
@@ -909,6 +956,18 @@ export default function EscalaWizard() {
                 </h3>
                 <div className="border border-border rounded-xl p-4 bg-muted/10">
                   <MiniCalendar mes={mes} ano={ano} markedDays={markedDaysMap} />
+                  {/* Legenda de cores */}
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    {militares.filter(m => m.matricula).map((m, idx) => {
+                      const c = MILITAR_COLORS[idx % MILITAR_COLORS.length];
+                      return (
+                        <div key={m.id} className="flex items-center gap-1.5">
+                          <div className={`w-3 h-3 rounded-sm ${c.bg} flex-shrink-0`} />
+                          <span className="text-xs text-muted-foreground">{m.nome || m.matricula}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
                   <div className="mt-3 flex flex-wrap gap-3">
                     {militares.filter(m => m.matricula && m.selectedDays.size > 0).map(m => (
                       <div key={m.id} className="flex items-center gap-1.5 text-xs">
@@ -993,16 +1052,7 @@ export default function EscalaWizard() {
                                       {FUNCOES.map(f => <SelectItem key={f} value={f} className="text-xs">{f}</SelectItem>)}
                                     </SelectContent>
                                   </Select>
-                                  <Select
-                                    value={editingRecord.modalidade}
-                                    onValueChange={v => setEditingRecord(r => r ? { ...r, modalidade: v } : r)}
-                                  >
-                                    <SelectTrigger className="h-7 w-32 text-xs"><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="Especial">Especial</SelectItem>
-                                      <SelectItem value="Extraordinário">Extraordinário</SelectItem>
-                                    </SelectContent>
-                                  </Select>
+
                                   <Button size="sm" className="h-7 text-xs px-3" onClick={() => {
                                     if (editingRecord) {
                                       setDayOverride(m.id, day, {
