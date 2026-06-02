@@ -21,6 +21,8 @@ import {
   Clock, Save, ArrowLeft, Loader2, Search, User, Calendar, Info, CheckCircle2, Tag,
 } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
+import { getLaunchWindow, isDateInWindow, formatWindow } from "@shared/launchWindow";
+import { AlertTriangle, Lock } from "lucide-react";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -317,6 +319,16 @@ export default function OvertimeForm() {
 
   const isPending = isSubmitting || createMutation.isPending || updateMutation.isPending;
 
+  // ── Janela de lançamento ──────────────────────────────────────────────────────
+  const launchWindow = getLaunchWindow();
+  const MESES_PT = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+  const mesRefLabel = `${MESES_PT[launchWindow.mesRef - 1]}/${launchWindow.anoRef}`;
+
+  // Valida se a data digitada pertence ao mês de referência
+  const dateInWindow = watchDate?.match(/^\d{2}\/\d{2}\/\d{4}$/)
+    ? isDateInWindow(toISO(watchDate), launchWindow)
+    : true; // não valida enquanto não está completa
+
   return (
     <AppLayout>
       <div className="max-w-3xl mx-auto space-y-6 pb-12">
@@ -335,6 +347,44 @@ export default function OvertimeForm() {
             </p>
           </div>
         </div>
+
+        {/* Banner de janela de lançamento */}
+        {!launchWindow.isOpen ? (
+          <div className="flex items-start gap-3 rounded-xl border border-destructive/40 bg-destructive/5 px-4 py-3">
+            <Lock className="w-5 h-5 text-destructive mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-destructive">Janela de lançamento encerrada</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                O período de lançamento para <strong>{mesRefLabel}</strong> foi encerrado.
+                A janela estava aberta de <strong>{formatWindow(launchWindow)}</strong>.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-start gap-3 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3">
+            <Calendar className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-foreground">Mês de referência: <span className="text-primary">{mesRefLabel}</span></p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Janela de lançamento aberta de <strong>{formatWindow(launchWindow)}</strong>.
+                Registros devem ser do mês de <strong>{mesRefLabel}</strong>.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Aviso de data fora do mês */}
+        {!dateInWindow && watchDate?.match(/^\d{2}\/\d{2}\/\d{4}$/) && (
+          <div className="flex items-start gap-3 rounded-xl border border-amber-400/50 bg-amber-50 dark:bg-amber-950/20 px-4 py-3">
+            <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-amber-800 dark:text-amber-400">Data fora do mês de referência</p>
+              <p className="text-xs text-amber-700 dark:text-amber-500 mt-0.5">
+                A data informada não pertence a <strong>{mesRefLabel}</strong>. Altere para uma data dentro do mês de referência.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Duration cards */}
         <div className="grid grid-cols-2 gap-4">
@@ -674,7 +724,7 @@ export default function OvertimeForm() {
             <Button type="button" variant="outline" onClick={() => navigate("/horas")} className="px-6">
               Cancelar
             </Button>
-            <Button type="submit" disabled={isPending} className="px-8 gap-2">
+            <Button type="submit" disabled={isPending || !launchWindow.isOpen || !dateInWindow} className="px-8 gap-2">
               {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
               {isEdit ? "Salvar Alterações" : "Registrar Escala"}
             </Button>

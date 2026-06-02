@@ -37,6 +37,7 @@ interface NavItem {
   href: string;
   icon: React.ElementType;
   adminOnly?: boolean;
+  chefeOnly?: boolean;
 }
 
 const navItems: NavItem[] = [
@@ -45,6 +46,7 @@ const navItems: NavItem[] = [
   { label: "Novo Registro", href: "/novo", icon: ClipboardList },
   { label: "Escalas em Lote", href: "/escalas", icon: CalendarRange },
   { label: "Relatórios", href: "/relatorios", icon: BarChart3 },
+  { label: "Meu Setor", href: "/meu-setor", icon: Building2, chefeOnly: true },
   { label: "Painel Admin", href: "/admin", icon: Shield, adminOnly: true },
   { label: "Usuários", href: "/admin/usuarios", icon: Users, adminOnly: true },
   { label: "Setores", href: "/admin/setores", icon: Building2, adminOnly: true },
@@ -98,7 +100,13 @@ export default function AppLayout({ children }: AppLayoutProps) {
   }
 
   const isAdmin = user?.role === "admin";
-  const visibleNav = navItems.filter((item) => !item.adminOnly || isAdmin);
+  const { data: myDept } = trpc.chefe.myDepartment.useQuery(undefined, { enabled: !!user });
+  const isChefe = !!myDept;
+  const visibleNav = navItems.filter((item) => {
+    if (item.adminOnly && !isAdmin) return false;
+    if (item.chefeOnly && !isChefe && !isAdmin) return false;
+    return true;
+  });
 
   const initials = (user?.name ?? "U")
     .split(" ")
@@ -146,6 +154,11 @@ export default function AppLayout({ children }: AppLayoutProps) {
                 {!collapsed && item.adminOnly && (
                   <span className="ml-auto text-[9px] font-bold uppercase tracking-wider bg-sidebar-primary/20 text-sidebar-primary px-1.5 py-0.5 rounded-full">
                     Admin
+                  </span>
+                )}
+                {!collapsed && item.chefeOnly && !item.adminOnly && (
+                  <span className="ml-auto text-[9px] font-bold uppercase tracking-wider bg-amber-500/20 text-amber-600 px-1.5 py-0.5 rounded-full">
+                    Chefe
                   </span>
                 )}
               </div>

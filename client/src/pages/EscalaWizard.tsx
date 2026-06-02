@@ -18,6 +18,8 @@ import {
   Edit2, X, UserPlus, CalendarDays
 } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
+import { getLaunchWindow, formatWindow } from "@shared/launchWindow";
+import { Lock } from "lucide-react";
 
 // ─── Paleta de cores distintas por militar ───────────────────────────────────
 const MILITAR_COLORS = [
@@ -221,11 +223,15 @@ export default function EscalaWizard() {
   const [, navigate] = useLocation();
   const { user } = useAuth();
 
+  // ── Janela de lançamento ──
+  const launchWindow = getLaunchWindow();
+
   // ── Configuração geral (Step 1) ──
   const now = new Date();
   const [tipoEscala, setTipoEscala] = useState("");
-  const [mes, setMes] = useState(now.getMonth() + 1);
-  const [ano, setAno] = useState(now.getFullYear());
+  // Mês e ano fixos no mês de referência da janela de lançamento
+  const [mes] = useState(launchWindow.mesRef);
+  const [ano] = useState(launchWindow.anoRef);
   const [globalStartTime, setGlobalStartTime] = useState("13:00");
   const [globalEndTime, setGlobalEndTime] = useState("17:00");
   const [funcao, setFuncao] = useState("");
@@ -573,6 +579,30 @@ export default function EscalaWizard() {
           </Button>
         </div>
 
+        {/* Banner de janela de lançamento */}
+        {!launchWindow.isOpen ? (
+          <div className="flex items-start gap-3 rounded-xl border border-destructive/40 bg-destructive/5 px-4 py-3 mb-6">
+            <Lock className="w-5 h-5 text-destructive mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-destructive">Janela de lançamento encerrada</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                O período de lançamento para <strong>{MESES[launchWindow.mesRef - 1]}/{launchWindow.anoRef}</strong> foi encerrado.
+                A janela estava aberta de <strong>{formatWindow(launchWindow)}</strong>.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-start gap-3 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 mb-6">
+            <Calendar className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-foreground">Mês de referência: <span className="text-primary">{MESES[launchWindow.mesRef - 1]} {launchWindow.anoRef}</span></p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Janela aberta de <strong>{formatWindow(launchWindow)}</strong>. Apenas dias de <strong>{MESES[launchWindow.mesRef - 1]}</strong> podem ser selecionados.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Stepper */}
         <div className="flex items-center mb-8 overflow-x-auto pb-2">
           {stepLabels.map((s, idx) => {
@@ -636,20 +666,11 @@ export default function EscalaWizard() {
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Mês de Referência <span className="text-destructive">*</span></Label>
-                  <div className="flex gap-2">
-                    <Select value={String(mes)} onValueChange={v => setMes(Number(v))}>
-                      <SelectTrigger className="flex-1"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {MESES.map((m, i) => <SelectItem key={i+1} value={String(i+1)}>{m}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                    <Select value={String(ano)} onValueChange={v => setAno(Number(v))}>
-                      <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {[2024,2025,2026,2027].map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
+                  <Label>Mês de Referência</Label>
+                  <div className="flex items-center gap-2 h-10 px-3 rounded-md border border-border bg-muted/40 text-sm font-medium text-foreground">
+                    <Lock className="w-3.5 h-3.5 text-muted-foreground" />
+                    <span>{MESES[mes - 1]} / {ano}</span>
+                    <span className="ml-auto text-xs text-muted-foreground">Fixo — janela: {formatWindow(launchWindow)}</span>
                   </div>
                 </div>
                 <div className="space-y-1.5">

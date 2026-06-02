@@ -37,6 +37,9 @@ import {
   updateEscalaStatus,
   updateOvertimeRecord,
   updateUserProfile,
+  getDepartmentByChefe,
+  getOvertimeRecordsByDepartment,
+  getEscalasByDepartment,
 } from "./db";
 
 // ─── Admin guard ──────────────────────────────────────────────────────────────
@@ -374,6 +377,40 @@ export const appRouter = router({
         });
 
         return { csv: [header, ...rows].join("\n"), count: records.length };
+      }),
+  }),
+
+  // ─── Chefe de Setor ──────────────────────────────────────────────────────────
+  chefe: router({
+    /** Retorna o departamento onde o usuário logado é chefe */
+    myDepartment: protectedProcedure.query(({ ctx }) =>
+      getDepartmentByChefe(ctx.user.id)
+    ),
+
+    /** Registros de horas extras de todos os usuários do setor do chefe */
+    listOvertimes: protectedProcedure
+      .input(z.object({
+        mes: z.number().optional(),
+        ano: z.number().optional(),
+        status: z.string().optional(),
+      }))
+      .query(async ({ ctx, input }) => {
+        const dept = await getDepartmentByChefe(ctx.user.id);
+        if (!dept) throw new TRPCError({ code: "FORBIDDEN", message: "Você não é chefe de nenhum setor." });
+        return getOvertimeRecordsByDepartment(dept.name, input);
+      }),
+
+    /** Escalas em lote de todos os usuários do setor do chefe */
+    listEscalas: protectedProcedure
+      .input(z.object({
+        mes: z.number().optional(),
+        ano: z.number().optional(),
+        status: z.string().optional(),
+      }))
+      .query(async ({ ctx, input }) => {
+        const dept = await getDepartmentByChefe(ctx.user.id);
+        if (!dept) throw new TRPCError({ code: "FORBIDDEN", message: "Você não é chefe de nenhum setor." });
+        return getEscalasByDepartment(dept.name, input);
       }),
   }),
 

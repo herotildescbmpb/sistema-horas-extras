@@ -112,3 +112,12 @@
 - [x] Calendário visual completo mostrando todos os lançamentos antes da finalização
 - [x] Pop-up de alerta: lançamento não pode ser desfeito, com confirmação explícita
 - [x] Testes e checkpoint
+
+## Janela de Lançamento e Acesso do Chefe (v9)
+- [x] Helper `getLaunchWindow()` retorna { mesRef, anoRef, dataInicio, dataFim } com janela do mês atual (01/mês a 01/mês+1)
+- [x] Formulário único (OvertimeForm): mês/ano fixo no mês atual, campo data bloqueado fora da janela, banner de aviso fora da janela
+- [x] Wizard de escala (EscalaWizard): mês fixo no mês atual, bloquear seleção de datas fora da janela, banner de aviso
+- [x] Endpoint tRPC `chefe.listOvertimes` e `chefe.listEscalas`: chefe vê registros e escalas do seu setor
+- [x] Endpoint tRPC `chefe.myDepartment`: retorna o setor onde o usuário é chefe
+- [x] Painel do chefe de setor (MeuSetor.tsx): listagem de registros e escalas dos usuários do seu setor (rascunho e lançado)
+- [x] Navegação: adicionar item "Meu Setor" no menu para chefes

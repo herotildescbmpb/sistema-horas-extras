@@ -16,6 +16,7 @@ import EscalaList from "./pages/EscalaList";
 import EscalaWizard from "./pages/EscalaWizard";
 import EscalaDetail from "./pages/EscalaDetail";
 import NovoRegistro from "./pages/NovoRegistro";
+import MeuSetor from "./pages/MeuSetor";
 
 function Router() {
   return (
@@ -32,6 +33,7 @@ function Router() {
       <Route path="/escalas" component={EscalaList} />
       <Route path="/escalas/nova" component={EscalaWizard} />
       <Route path="/escalas/:id" component={EscalaDetail} />
+      <Route path="/meu-setor" component={MeuSetor} />
       <Route path="/perfil" component={Profile} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />

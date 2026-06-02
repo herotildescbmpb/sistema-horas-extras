@@ -584,3 +584,133 @@ export async function duplicateEscala(escalaId: number, userId: number) {
 
   return { id: novaEscalaId, mes: novoMes, ano: novoAno };
 }
+
+// ─── Acesso do Chefe de Setor ─────────────────────────────────────────────────
+
+/**
+ * Retorna o departamento onde o usuário é chefe (chefeId = userId).
+ * Retorna null se o usuário não for chefe de nenhum setor.
+ */
+export async function getDepartmentByChefe(userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db
+    .select()
+    .from(departments)
+    .where(and(eq(departments.chefeId, userId), eq(departments.active, true)))
+    .limit(1);
+  return result[0] ?? null;
+}
+
+/**
+ * Retorna todos os usuários que pertencem ao departamento informado (pelo nome).
+ */
+export async function getUsersByDepartment(departmentName: string) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select({ id: users.id, name: users.name, matricula: users.matricula, position: users.position })
+    .from(users)
+    .where(eq(users.department, departmentName));
+}
+
+/**
+ * Retorna registros de horas extras de todos os usuários de um setor.
+ * Inclui nome do criador para exibição.
+ */
+export async function getOvertimeRecordsByDepartment(
+  departmentName: string,
+  filters?: { startDate?: string; endDate?: string; status?: string; mes?: number; ano?: number }
+) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const conditions: ReturnType<typeof eq>[] = [eq(users.department, departmentName)];
+  if (filters?.startDate) conditions.push(gte(overtimeRecords.date, filters.startDate) as any);
+  if (filters?.endDate) conditions.push(lte(overtimeRecords.date, filters.endDate) as any);
+  if (filters?.status) {
+    conditions.push(eq(overtimeRecords.status, filters.status as "pending" | "approved" | "rejected") as any);
+  }
+  if (filters?.mes && filters?.ano) {
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const start = `${filters.ano}-${pad(filters.mes)}-01`;
+    const end = `${filters.ano}-${pad(filters.mes)}-31`;
+    conditions.push(gte(overtimeRecords.date, start) as any);
+    conditions.push(lte(overtimeRecords.date, end) as any);
+  }
+
+  return db
+    .select({
+      id: overtimeRecords.id,
+      userId: overtimeRecords.userId,
+      tipoEscala: overtimeRecords.tipoEscala,
+      servidor: overtimeRecords.servidor,
+      date: overtimeRecords.date,
+      endDate: overtimeRecords.endDate,
+      startTime: overtimeRecords.startTime,
+      endTime: overtimeRecords.endTime,
+      funcao: overtimeRecords.funcao,
+      modalidade: overtimeRecords.modalidade,
+      totalMinutes: overtimeRecords.totalMinutes,
+      dayType: overtimeRecords.dayType,
+      multiplier: overtimeRecords.multiplier,
+      reason: overtimeRecords.reason,
+      project: overtimeRecords.project,
+      department: overtimeRecords.department,
+      status: overtimeRecords.status,
+      reviewedBy: overtimeRecords.reviewedBy,
+      reviewedAt: overtimeRecords.reviewedAt,
+      reviewNote: overtimeRecords.reviewNote,
+      createdAt: overtimeRecords.createdAt,
+      updatedAt: overtimeRecords.updatedAt,
+      userName: users.name,
+      userMatricula: users.matricula,
+      userDepartment: users.department,
+    })
+    .from(overtimeRecords)
+    .innerJoin(users, eq(overtimeRecords.userId, users.id))
+    .where(and(...(conditions as any[])))
+    .orderBy(desc(overtimeRecords.date));
+}
+
+/**
+ * Retorna escalas em lote de todos os usuários de um setor.
+ */
+export async function getEscalasByDepartment(
+  departmentName: string,
+  filters?: { mes?: number; ano?: number; status?: string }
+) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const conditions: any[] = [eq(users.department, departmentName)];
+  if (filters?.mes) conditions.push(eq(escalas.mes, filters.mes));
+  if (filters?.ano) conditions.push(eq(escalas.ano, filters.ano));
+  if (filters?.status) conditions.push(eq(escalas.status, filters.status as any));
+
+  return db
+    .select({
+      id: escalas.id,
+      userId: escalas.userId,
+      tipoEscala: escalas.tipoEscala,
+      mes: escalas.mes,
+      ano: escalas.ano,
+      startTime: escalas.startTime,
+      endTime: escalas.endTime,
+      funcao: escalas.funcao,
+      department: escalas.department,
+      justificativa: escalas.justificativa,
+      status: escalas.status,
+      reviewedBy: escalas.reviewedBy,
+      reviewedAt: escalas.reviewedAt,
+      reviewNote: escalas.reviewNote,
+      createdAt: escalas.createdAt,
+      updatedAt: escalas.updatedAt,
+      creatorName: users.name,
+      creatorMatricula: users.matricula,
+    })
+    .from(escalas)
+    .innerJoin(users, eq(escalas.userId, users.id))
+    .where(and(...conditions))
+    .orderBy(desc(escalas.createdAt));
+}
