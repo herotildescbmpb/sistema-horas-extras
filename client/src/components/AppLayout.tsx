@@ -66,6 +66,8 @@ export default function AppLayout({ children }: AppLayoutProps) {
     onSuccess: () => { window.location.href = "/"; },
     onError: () => toast.error("Erro ao sair"),
   });
+  // MUST be called unconditionally before any early returns
+  const { data: myDept } = trpc.chefe.myDepartment.useQuery(undefined, { enabled: !!user });
 
   if (loading) {
     return (
@@ -101,7 +103,6 @@ export default function AppLayout({ children }: AppLayoutProps) {
   }
 
   const isAdmin = user?.role === "admin";
-  const { data: myDept } = trpc.chefe.myDepartment.useQuery(undefined, { enabled: !!user });
   const isChefe = !!myDept;
   const visibleNav = navItems.filter((item) => {
     if (item.adminOnly && !isAdmin) return false;
