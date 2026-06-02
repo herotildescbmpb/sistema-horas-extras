@@ -15,7 +15,6 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import AppLayout from "@/components/AppLayout";
 import { getLaunchWindow } from "@shared/launchWindow";
 
 const MESES = [
@@ -79,7 +78,6 @@ export default function MeuSetor() {
   // Usuário não é chefe de nenhum setor
   if (!loadingDept && !dept) {
     return (
-      <AppLayout>
         <div className="max-w-2xl mx-auto px-4 py-16 text-center">
           <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
             <Building2 className="w-8 h-8 text-muted-foreground" />
@@ -89,7 +87,6 @@ export default function MeuSetor() {
             Você não está registrado como chefe de nenhum setor. Entre em contato com o administrador para obter acesso.
           </p>
         </div>
-      </AppLayout>
     );
   }
 
@@ -98,7 +95,6 @@ export default function MeuSetor() {
   const escalasLancadas = (escalas ?? []).filter(e => e.status === "lancado" || e.status === "aprovado").length;
 
   return (
-    <AppLayout>
       <div className="p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
 
         {/* Header */}
@@ -339,6 +335,5 @@ export default function MeuSetor() {
           </Card>
         )}
       </div>
-    </AppLayout>
   );
 }

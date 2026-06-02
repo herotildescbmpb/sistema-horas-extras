@@ -156,3 +156,10 @@
 - [x] Criar modal de troca obrigatória de senha (exibido quando `mustChangePassword = true`)
 - [x] Integrar sessão local com o contexto `useAuth()` do frontend
 - [x] Atualizar guia do usuário com instruções de login local
+
+## Correções de Bugs — Simulação de Primeiro Acesso (v13)
+
+- [x] Corrigir bug da sidebar ausente após login local: mover AppLayout para App.tsx como wrapper global de rotas protegidas
+- [x] Remover AppLayout duplicado de NovoRegistro.tsx, MeuSetor.tsx, EscalaWizard.tsx, OvertimeForm.tsx, EscalaList.tsx, EscalaDetail.tsx
+- [x] Implementar lógica de aprovação diferenciada por perfil: chefe/admin → status "approved"; auxiliar_administrativo → status "pending" (overtime.create)
+- [x] Implementar mesma lógica no lançamento de escalas em lote: launchEscala aceita parâmetro autoApprove; escalas.launch passa autoApprove baseado no role

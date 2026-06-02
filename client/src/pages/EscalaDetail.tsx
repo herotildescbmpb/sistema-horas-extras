@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { ChevronLeft, FileText, Rocket, Clock, Calendar } from "lucide-react";
-import AppLayout from "@/components/AppLayout";
 
 const MESES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 const DIAS = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
@@ -35,25 +34,21 @@ export default function EscalaDetail() {
 
   if (isLoading) {
     return (
-      <AppLayout>
         <div className="max-w-5xl mx-auto px-4 py-6">
           <div className="animate-pulse space-y-4">
             <div className="h-8 bg-muted rounded w-48" />
             <div className="h-48 bg-muted rounded-xl" />
           </div>
         </div>
-      </AppLayout>
     );
   }
 
   if (!escala) {
     return (
-      <AppLayout>
         <div className="max-w-5xl mx-auto px-4 py-6 text-center py-20">
           <p className="text-muted-foreground">Escala não encontrada.</p>
           <Button variant="ghost" onClick={() => navigate("/escalas")} className="mt-4">Voltar</Button>
         </div>
-      </AppLayout>
     );
   }
 
@@ -157,7 +152,6 @@ export default function EscalaDetail() {
   };
 
   return (
-    <AppLayout>
       <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
         {/* Header */}
         <div className="flex items-center gap-3">
@@ -259,6 +253,5 @@ export default function EscalaDetail() {
           </div>
         )}
       </div>
-    </AppLayout>
   );
 }

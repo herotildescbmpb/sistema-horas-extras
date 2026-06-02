@@ -1,0 +1,18 @@
+{
+  "query": "SELECT id, name, email, role, mustChangePassword, loginMethod FROM users WHERE email = 'kalinysimony@gmail.com';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4XMYXLTg6g9ZctA.83aa4a08e73e --database cDx3jwjHrzRKbmDZmbrJYX --execute SELECT id, name, email, role, mustChangePassword, loginMethod FROM users WHERE email = 'kalinysimony@gmail.com';",
+  "rows": [
+    {
+      "id": "930010",
+      "name": "Kaliny Simony Fideles de Araújo Morais",
+      "email": "kalinysimony@gmail.com",
+      "role": "chefe",
+      "mustChangePassword": "0",
+      "loginMethod": "pre-cadastro"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\temail\trole\tmustChangePassword\tloginMethod\n930010\tKaliny Simony Fideles de Araújo Morais\tkalinysimony@gmail.com\tchefe\t0\tpre-cadastro\n",
+  "stderr": "",
+  "execution_time_ms": 267
+}

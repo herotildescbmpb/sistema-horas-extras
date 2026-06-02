@@ -1,0 +1,19 @@
+{
+  "query": "SELECT id, name, email, role, isActive, passwordHash IS NOT NULL as has_password, mustChangePassword FROM users WHERE email = 'kalinysimony@gmail.com';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4XMYXLTg6g9ZctA.83aa4a08e73e --database cDx3jwjHrzRKbmDZmbrJYX --execute SELECT id, name, email, role, isActive, passwordHash IS NOT NULL as has_password, mustChangePassword FROM users WHERE email = 'kalinysimony@gmail.com';",
+  "rows": [
+    {
+      "id": "930010",
+      "name": "Kaliny Simony Fideles de Araújo Morais",
+      "email": "kalinysimony@gmail.com",
+      "role": "chefe",
+      "isActive": "1",
+      "has_password": "1",
+      "mustChangePassword": "1"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\temail\trole\tisActive\thas_password\tmustChangePassword\n930010\tKaliny Simony Fideles de Araújo Morais\tkalinysimony@gmail.com\tchefe\t1\t1\t1\n",
+  "stderr": "",
+  "execution_time_ms": 266
+}

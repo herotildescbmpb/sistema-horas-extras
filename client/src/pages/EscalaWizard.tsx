@@ -17,7 +17,6 @@ import {
   Settings2, Plus, Trash2, Clock, AlertCircle, AlertTriangle,
   Edit2, X, UserPlus, CalendarDays
 } from "lucide-react";
-import AppLayout from "@/components/AppLayout";
 import { getLaunchWindow, formatWindow } from "@shared/launchWindow";
 import { Lock } from "lucide-react";
 
@@ -564,7 +563,7 @@ export default function EscalaWizard() {
 
   // ── Render ────────────────────────────────────────────────────────────────────
   return (
-    <AppLayout>
+    <>
       <div className="max-w-5xl mx-auto px-4 py-6">
         {/* Header */}
         <div className="mb-6 flex items-start justify-between">
@@ -1276,6 +1275,6 @@ export default function EscalaWizard() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </AppLayout>
+    </>
   );
 }

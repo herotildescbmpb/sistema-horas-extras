@@ -493,7 +493,7 @@ export async function updateEscalaItem(
   await db.update(escalaItems).set(data).where(eq(escalaItems.id, itemId));
 }
 
-export async function launchEscala(escalaId: number, creatorUserId: number) {
+export async function launchEscala(escalaId: number, creatorUserId: number, autoApprove = false) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   const escala = await getEscalaById(escalaId);
@@ -523,7 +523,7 @@ export async function launchEscala(escalaId: number, creatorUserId: number) {
       multiplier,
       reason: escala.justificativa ?? "",
       department: escala.department ?? "",
-      status: "pending",
+      status: autoApprove ? "approved" : "pending",
     }).$returningId();
 
     // Vincula o overtime_record ao item da escala

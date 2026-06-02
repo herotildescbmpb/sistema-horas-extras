@@ -20,7 +20,6 @@ import { Badge } from "@/components/ui/badge";
 import {
   Clock, Save, ArrowLeft, Loader2, Search, User, Calendar, Info, CheckCircle2, Tag,
 } from "lucide-react";
-import AppLayout from "@/components/AppLayout";
 import { getLaunchWindow, isDateInWindow, formatWindow } from "@shared/launchWindow";
 import { AlertTriangle, Lock } from "lucide-react";
 
@@ -435,7 +434,6 @@ export default function OvertimeForm() {
     : true; // não valida enquanto não está completa
 
   return (
-    <AppLayout>
       <div className="max-w-3xl mx-auto space-y-6 pb-12">
 
         {/* Header */}
@@ -855,7 +853,6 @@ export default function OvertimeForm() {
           </div>
         </form>
       </div>
-    </AppLayout>
   );
 }
 

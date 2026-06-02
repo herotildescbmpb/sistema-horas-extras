@@ -1,13 +1,10 @@
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ClipboardList, CalendarRange, ChevronRight, Clock, Users } from "lucide-react";
-import AppLayout from "@/components/AppLayout";
-
 export default function NovoRegistro() {
   const [, navigate] = useLocation();
 
   return (
-    <AppLayout>
       <div className="max-w-2xl mx-auto px-4 py-10 space-y-8">
         {/* Header */}
         <div className="flex items-center gap-3">
@@ -99,6 +96,5 @@ export default function NovoRegistro() {
           Use <strong>Lançamento Único</strong> para registros pontuais e <strong>Escala em Lote</strong> para escalas mensais recorrentes.
         </p>
       </div>
-    </AppLayout>
   );
 }

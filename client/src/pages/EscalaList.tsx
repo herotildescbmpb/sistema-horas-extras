@@ -15,7 +15,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { Plus, Calendar, Clock, ChevronRight, FileText, Rocket, Copy } from "lucide-react";
-import AppLayout from "@/components/AppLayout";
 
 const MESES = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
 const MESES_FULL = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
@@ -70,18 +69,16 @@ export default function EscalaList() {
 
   if (isLoading) {
     return (
-      <AppLayout>
         <div className="max-w-5xl mx-auto px-4 py-6">
           <div className="animate-pulse space-y-4">
             {[1,2,3].map(i => <div key={i} className="h-24 bg-muted rounded-xl" />)}
           </div>
         </div>
-      </AppLayout>
     );
   }
 
   return (
-    <AppLayout>
+    <>
       <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -252,6 +249,6 @@ export default function EscalaList() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </AppLayout>
+    </>
   );
 }
