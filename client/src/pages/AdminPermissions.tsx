@@ -19,23 +19,21 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-type RoleType = "admin" | "chefe" | "auxiliar_administrativo" | "user";
+type RoleType = "admin" | "chefe" | "auxiliar_administrativo";
 
 const ROLE_LABELS: Record<RoleType, string> = {
   admin: "Admin",
   chefe: "Chefe",
   auxiliar_administrativo: "Aux. Administrativo",
-  user: "Usuário",
 };
 
 const ROLE_COLORS: Record<RoleType, string> = {
   admin:                  "bg-red-100 text-red-700 border-red-200",
   chefe:                  "bg-amber-100 text-amber-700 border-amber-200",
   auxiliar_administrativo:"bg-blue-100 text-blue-700 border-blue-200",
-  user:                   "bg-slate-100 text-slate-700 border-slate-200",
 };
 
-const ROLES: RoleType[] = ["admin", "chefe", "auxiliar_administrativo", "user"];
+const ROLES: RoleType[] = ["admin", "chefe", "auxiliar_administrativo"];
 
 export default function AdminPermissions() {
   const { user } = useAuth();
