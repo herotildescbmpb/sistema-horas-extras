@@ -71,6 +71,15 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const { data: myDept } = trpc.chefe.myDepartment.useQuery(undefined, { enabled: !!user });
   const { data: myPerms } = trpc.permissions.mine.useQuery(undefined, { enabled: !!user, staleTime: 60_000 });
 
+  const isAdmin = user?.role === "admin";
+  const visibleNav = useMemo(() => {
+    return ALL_NAV_ITEMS.filter((item) => {
+      if (item.adminOnly) return isAdmin;
+      if (item.permissionKey && myPerms) return !!myPerms[item.permissionKey];
+      return true;
+    });
+  }, [isAdmin, myPerms]);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -103,15 +112,6 @@ export default function AppLayout({ children }: AppLayoutProps) {
       </div>
     );
   }
-
-  const isAdmin = user?.role === "admin";
-  const visibleNav = useMemo(() => {
-    return ALL_NAV_ITEMS.filter((item) => {
-      if (item.adminOnly) return isAdmin;
-      if (item.permissionKey && myPerms) return !!myPerms[item.permissionKey];
-      return true;
-    });
-  }, [isAdmin, myPerms]);
 
   const initials = (user?.name ?? "U")
     .split(" ")
