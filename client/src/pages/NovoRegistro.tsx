@@ -66,11 +66,6 @@ export default function NovoRegistro() {
             onClick={() => navigate("/escalas/nova")}
             className="group relative flex flex-col items-start gap-4 rounded-2xl border-2 border-border bg-card p-6 text-left shadow-sm transition-all duration-200 hover:border-primary hover:shadow-md hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
-            {/* Badge "Recomendado" */}
-            <span className="absolute right-4 top-4 rounded-full bg-primary/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
-              Recomendado
-            </span>
-
             {/* Ícone */}
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
               <CalendarRange className="w-6 h-6" />
