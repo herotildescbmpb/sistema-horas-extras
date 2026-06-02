@@ -3,6 +3,7 @@ import { getLoginUrl } from "@/const";
 import { cn } from "@/lib/utils";
 import {
   BarChart3,
+  BookOpen,
   Building2,
   CalendarRange,
   ChevronLeft,
@@ -52,6 +53,7 @@ const ALL_NAV_ITEMS: NavItem[] = [
   { label: "Usuários",     href: "/admin/usuarios", icon: Users,           adminOnly: true },
   { label: "Setores",      href: "/admin/setores",  icon: Building2,       adminOnly: true },
   { label: "Permissões",   href: "/admin/permissoes", icon: Settings,      adminOnly: true },
+  { label: "Guia do Usuário", href: "/guia",           icon: BookOpen },
 ];
 
 interface AppLayoutProps {
