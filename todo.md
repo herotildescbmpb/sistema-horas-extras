@@ -97,3 +97,13 @@
 - [x] Botão "Salvar Rascunho" e botão "Lançar Escala"
 - [x] Remover campo "projeto" do formulário individual
 - [x] Adicionar item "Escalas em Lote" no menu de navegação
+
+## Wizard Escala — Novo Fluxo por Militar (v7)
+- [x] Novo fluxo: Configuração → Militar 1 (dados + calendário) → Militar 2... → Revisão → Lançamento
+- [x] Cada militar tem seu próprio calendário com dias distintos
+- [x] Após preencher dados e dias do militar, botão "Adicionar outro militar" (até 10)
+- [x] Etapa de revisão: registros organizados por calendário visual (grade mês × militares)
+- [x] Edição individual de cada registro na revisão (horário, função, modalidade)
+- [x] Calendário visual completo mostrando todos os lançamentos antes da finalização
+- [x] Pop-up de alerta: lançamento não pode ser desfeito, com confirmação explícita
+- [x] Testes e checkpoint
