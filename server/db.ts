@@ -13,6 +13,7 @@ import {
   InsertUser,
   notifications,
   overtimeRecords,
+  rolePermissions,
   servidores,
   users,
 } from "../drizzle/schema";
@@ -97,7 +98,7 @@ export async function setUserActive(userId: number, isActive: boolean) {
 
 export async function adminUpdateUser(
   userId: number,
-  data: { name?: string; email?: string; department?: string; position?: string; role?: "user" | "admin"; isActive?: boolean; matricula?: string }
+  data: { name?: string; email?: string; department?: string; position?: string; role?: "user" | "admin" | "chefe" | "auxiliar_administrativo"; isActive?: boolean; matricula?: string }
 ) {
   const db = await getDb();
   if (!db) return;
@@ -105,7 +106,7 @@ export async function adminUpdateUser(
 }
 
 export async function createUser(
-  data: { name: string; email?: string; department?: string; position?: string; role: "user" | "admin"; matricula?: string }
+  data: { name: string; email?: string; department?: string; position?: string; role: "user" | "admin" | "chefe" | "auxiliar_administrativo"; matricula?: string }
 ) {
   const db = await getDb();
   if (!db) return;
@@ -141,7 +142,7 @@ export async function updateUserProfile(
   await db.update(users).set(data).where(eq(users.id, userId));
 }
 
-export async function setUserRole(userId: number, role: "user" | "admin") {
+export async function setUserRole(userId: number, role: "user" | "admin" | "chefe" | "auxiliar_administrativo") {
   const db = await getDb();
   if (!db) return;
   await db.update(users).set({ role }).where(eq(users.id, userId));
@@ -782,4 +783,80 @@ export async function notifyChefe(
   const chefeId = dept[0]?.chefeId;
   if (!chefeId) return; // setor sem chefe cadastrado
   await db.insert(notifications).values({ ...notification, userId: chefeId });
+}
+
+// ─── Role Permissions ─────────────────────────────────────────────────────────
+
+// Permissões padrão por perfil
+export const DEFAULT_PERMISSIONS: Record<string, { label: string; category: string; defaults: Record<string, boolean> }> = {
+  // Dashboard
+  view_dashboard:       { label: "Ver Dashboard",              category: "Dashboard",  defaults: { admin: true,  chefe: true,  auxiliar_administrativo: true,  user: true  } },
+  // Registros de horas
+  create_overtime:      { label: "Criar Registro de Horas",    category: "Registros",  defaults: { admin: true,  chefe: true,  auxiliar_administrativo: true,  user: true  } },
+  view_own_overtime:    { label: "Ver Próprios Registros",      category: "Registros",  defaults: { admin: true,  chefe: true,  auxiliar_administrativo: true,  user: true  } },
+  edit_own_overtime:    { label: "Editar Próprios Registros",   category: "Registros",  defaults: { admin: true,  chefe: true,  auxiliar_administrativo: true,  user: true  } },
+  delete_own_overtime:  { label: "Excluir Próprios Registros",  category: "Registros",  defaults: { admin: true,  chefe: false, auxiliar_administrativo: false, user: false } },
+  // Escalas em lote
+  create_escala:        { label: "Criar Escala em Lote",        category: "Escalas",    defaults: { admin: true,  chefe: true,  auxiliar_administrativo: true,  user: false } },
+  view_own_escalas:     { label: "Ver Próprias Escalas",        category: "Escalas",    defaults: { admin: true,  chefe: true,  auxiliar_administrativo: true,  user: false } },
+  launch_escala:        { label: "Lançar Escala",               category: "Escalas",    defaults: { admin: true,  chefe: true,  auxiliar_administrativo: false, user: false } },
+  // Painel do setor
+  view_setor:           { label: "Ver Painel do Setor",         category: "Setor",      defaults: { admin: true,  chefe: true,  auxiliar_administrativo: false, user: false } },
+  // Relatórios
+  view_reports:         { label: "Ver Relatórios",              category: "Relatórios", defaults: { admin: true,  chefe: true,  auxiliar_administrativo: true,  user: false } },
+  // Admin
+  view_admin_panel:     { label: "Acessar Painel Admin",        category: "Admin",      defaults: { admin: true,  chefe: false, auxiliar_administrativo: false, user: false } },
+  approve_overtime:     { label: "Aprovar/Rejeitar Registros",  category: "Admin",      defaults: { admin: true,  chefe: false, auxiliar_administrativo: false, user: false } },
+  manage_users:         { label: "Gerenciar Usuários",          category: "Admin",      defaults: { admin: true,  chefe: false, auxiliar_administrativo: false, user: false } },
+  manage_departments:   { label: "Gerenciar Setores",           category: "Admin",      defaults: { admin: true,  chefe: false, auxiliar_administrativo: false, user: false } },
+  manage_permissions:   { label: "Gerenciar Permissões",        category: "Admin",      defaults: { admin: true,  chefe: false, auxiliar_administrativo: false, user: false } },
+};
+
+export type RoleType = "admin" | "chefe" | "auxiliar_administrativo" | "user";
+
+export async function getRolePermissions(role: RoleType): Promise<Record<string, boolean>> {
+  const db = await getDb();
+  // Montar mapa de defaults
+  const result: Record<string, boolean> = {};
+  for (const [key, def] of Object.entries(DEFAULT_PERMISSIONS)) {
+    result[key] = def.defaults[role] ?? false;
+  }
+  if (!db) return result;
+  // Sobrescrever com valores customizados do banco
+  const rows = await db
+    .select()
+    .from(rolePermissions)
+    .where(eq(rolePermissions.role, role));
+  for (const row of rows) {
+    result[row.permissionKey] = row.enabled;
+  }
+  return result;
+}
+
+export async function getAllRolePermissions(): Promise<Record<RoleType, Record<string, boolean>>> {
+  const roles: RoleType[] = ["admin", "chefe", "auxiliar_administrativo", "user"];
+  const all = {} as Record<RoleType, Record<string, boolean>>;
+  for (const role of roles) {
+    all[role] = await getRolePermissions(role);
+  }
+  return all;
+}
+
+export async function setRolePermission(role: RoleType, permissionKey: string, enabled: boolean): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  // Upsert: se já existe, atualiza; senão insere
+  const existing = await db
+    .select({ id: rolePermissions.id })
+    .from(rolePermissions)
+    .where(and(eq(rolePermissions.role, role), eq(rolePermissions.permissionKey, permissionKey)))
+    .limit(1);
+  if (existing.length > 0) {
+    await db
+      .update(rolePermissions)
+      .set({ enabled })
+      .where(and(eq(rolePermissions.role, role), eq(rolePermissions.permissionKey, permissionKey)));
+  } else {
+    await db.insert(rolePermissions).values({ role, permissionKey, enabled });
+  }
 }

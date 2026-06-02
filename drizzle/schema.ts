@@ -15,7 +15,7 @@ export const users = mysqlTable("users", {
   name: text("name"),
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
-  role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
+  role: mysqlEnum("role", ["user", "admin", "chefe", "auxiliar_administrativo"]).default("user").notNull(),
   isActive: boolean("isActive").default(true).notNull(),
   department: varchar("department", { length: 128 }),
   position: varchar("position", { length: 128 }),
@@ -144,3 +144,15 @@ export const notifications = mysqlTable("notifications", {
 
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = typeof notifications.$inferInsert;
+
+// Permissões por perfil — configuráveis pelo admin
+export const rolePermissions = mysqlTable("role_permissions", {
+  id: int("id").autoincrement().primaryKey(),
+  role: mysqlEnum("role", ["user", "admin", "chefe", "auxiliar_administrativo"]).notNull(),
+  permissionKey: varchar("permissionKey", { length: 128 }).notNull(), // ex: "view_dashboard"
+  enabled: boolean("enabled").default(true).notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type RolePermission = typeof rolePermissions.$inferSelect;
+export type InsertRolePermission = typeof rolePermissions.$inferInsert;

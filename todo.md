@@ -132,3 +132,15 @@
 - [x] Criar componente NotificationBell na sidebar com badge de contagem e polling a cada 30s
 - [x] Criar painel dropdown de notificações com lista, marcar como lida e link para o registro
 - [x] Polling automático a cada 30s para atualizar contagem sem recarregar a página
+
+## Perfis de Usuário e Gestão de Permissões (v11)
+
+- [ ] Migrar enum `role` no schema: `user` → `chefe`, adicionar `auxiliar_administrativo`, manter `admin`
+- [ ] Gerar migration SQL e aplicar via webdev_execute_sql
+- [ ] Criar tabela `role_permissions` (role, permission_key, enabled, label, category)
+- [ ] Seed de permissões padrão para cada perfil
+- [ ] Endpoints tRPC: `permissions.list`, `permissions.update`, `permissions.getMyPermissions`
+- [ ] Atualizar sidebar para exibir itens conforme permissões do perfil
+- [ ] Atualizar painel admin de usuários para mostrar e editar os três perfis
+- [ ] Criar página `/admin/permissoes` com tabela de permissões por perfil (toggle por linha)
+- [ ] Adicionar item "Permissões" no menu admin

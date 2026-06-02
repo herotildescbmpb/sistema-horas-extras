@@ -46,6 +46,11 @@ import {
   markNotificationRead,
   markAllNotificationsRead,
   notifyChefe,
+  getRolePermissions,
+  getAllRolePermissions,
+  setRolePermission,
+  DEFAULT_PERMISSIONS,
+  RoleType,
 } from "./db";
 
 // ─── Admin guard ──────────────────────────────────────────────────────────────
@@ -125,7 +130,7 @@ export const appRouter = router({
           email: z.string().optional(),
           department: z.string().optional(),
           position: z.string().optional(),
-          role: z.enum(["user", "admin"]).optional(),
+          role: z.enum(["user", "admin", "chefe", "auxiliar_administrativo"]).optional(),
           isActive: z.boolean().optional(),
           matricula: z.string().optional(),
         })
@@ -157,7 +162,7 @@ export const appRouter = router({
       }),
 
     setRole: adminProcedure
-      .input(z.object({ userId: z.number(), role: z.enum(["user", "admin"]) }))
+      .input(z.object({ userId: z.number(), role: z.enum(["user", "admin", "chefe", "auxiliar_administrativo"]) }))
       .mutation(({ input }) => setUserRole(input.userId, input.role)),
 
     create: adminProcedure
@@ -167,7 +172,7 @@ export const appRouter = router({
           email: z.string().email("E-mail inválido").optional().or(z.literal("")),
           department: z.string().optional(),
           position: z.string().optional(),
-          role: z.enum(["user", "admin"]).default("user"),
+          role: z.enum(["user", "admin", "chefe", "auxiliar_administrativo"]).default("user"),
           matricula: z.string().optional(),
         })
       )
@@ -579,7 +584,39 @@ export const appRouter = router({
         const result = await duplicateEscala(input.id, ctx.user.id);
         return result;
       }),
+   }),
+
+  // ─── Permissions ────────────────────────────────────────────────────────────────────────────────
+  permissions: router({
+    // Retorna permissões do usuário logado
+    mine: protectedProcedure.query(async ({ ctx }) => {
+      const role = ctx.user.role as RoleType;
+      return getRolePermissions(role);
+    }),
+
+    // Lista todas as permissões de todos os perfis (admin only)
+    listAll: adminProcedure.query(async () => {
+      const all = await getAllRolePermissions();
+      // Retornar também a definição de cada permissão (label, category)
+      const definitions = Object.entries(DEFAULT_PERMISSIONS).map(([key, def]) => ({
+        key,
+        label: def.label,
+        category: def.category,
+      }));
+      return { permissions: all, definitions };
+    }),
+
+    // Atualiza uma permissão de um perfil (admin only)
+    update: adminProcedure
+      .input(z.object({
+        role: z.enum(["user", "admin", "chefe", "auxiliar_administrativo"]),
+        permissionKey: z.string(),
+        enabled: z.boolean(),
+      }))
+      .mutation(async ({ input }) => {
+        await setRolePermission(input.role as RoleType, input.permissionKey, input.enabled);
+        return { success: true };
+      }),
   }),
 });
-
 export type AppRouter = typeof appRouter;

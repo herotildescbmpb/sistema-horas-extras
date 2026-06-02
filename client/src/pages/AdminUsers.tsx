@@ -27,24 +27,34 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 // ─── Edit schema ──────────────────────────────────────────────────────────────
+const ROLES = ["user", "admin", "chefe", "auxiliar_administrativo"] as const;
+type RoleValue = typeof ROLES[number];
+
+const ROLE_LABELS: Record<RoleValue, string> = {
+  admin: "Admin",
+  chefe: "Chefe",
+  auxiliar_administrativo: "Auxiliar Administrativo",
+  user: "Usuário",
+};
+
 const editSchema = z.object({
   name: z.string().min(2, "Nome obrigatório"),
   email: z.string().email("E-mail inválido").optional().or(z.literal("")),
   department: z.string().optional(),
   position: z.string().optional(),
   matricula: z.string().optional(),
-  role: z.enum(["user", "admin"]),
+  role: z.enum(ROLES),
 });
 type EditForm = z.infer<typeof editSchema>;
 
-// ─── Create schema ─────────────────────────────────────────────────────────────
+// ─── Create schema ──────────────────────────────────────────────────
 const createSchema = z.object({
   name: z.string().min(2, "Nome obrigatório"),
   email: z.string().email("E-mail inválido").optional().or(z.literal("")),
   department: z.string().optional(),
   position: z.string().optional(),
   matricula: z.string().optional(),
-  role: z.enum(["user", "admin"]),
+  role: z.enum(ROLES),
 });
 type CreateForm = z.infer<typeof createSchema>;
 
@@ -250,6 +260,8 @@ export default function AdminUsers() {
               <SelectContent>
                 <SelectItem value="all">Todos os perfis</SelectItem>
                 <SelectItem value="admin">Administrador</SelectItem>
+                <SelectItem value="chefe">Chefe</SelectItem>
+                <SelectItem value="auxiliar_administrativo">Aux. Administrativo</SelectItem>
                 <SelectItem value="user">Usuário</SelectItem>
               </SelectContent>
             </Select>
@@ -380,6 +392,14 @@ export default function AdminUsers() {
                         {u.role === "admin" ? (
                           <Badge className="bg-orange-500 hover:bg-orange-600 text-white text-xs gap-1">
                             <Shield className="h-3 w-3" /> Admin
+                          </Badge>
+                        ) : u.role === "chefe" ? (
+                          <Badge className="bg-amber-100 text-amber-700 border border-amber-200 text-xs">
+                            Chefe
+                          </Badge>
+                        ) : u.role === "auxiliar_administrativo" ? (
+                          <Badge className="bg-blue-100 text-blue-700 border border-blue-200 text-xs">
+                            Aux. Adm.
                           </Badge>
                         ) : (
                           <Badge variant="outline" className="text-xs">
@@ -538,6 +558,8 @@ export default function AdminUsers() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="user">Usuário</SelectItem>
+                        <SelectItem value="chefe">Chefe</SelectItem>
+                        <SelectItem value="auxiliar_administrativo">Aux. Administrativo</SelectItem>
                         <SelectItem value="admin">Administrador</SelectItem>
                       </SelectContent>
                     </Select>
@@ -696,6 +718,8 @@ export default function AdminUsers() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="user">Usuário</SelectItem>
+                        <SelectItem value="chefe">Chefe</SelectItem>
+                        <SelectItem value="auxiliar_administrativo">Aux. Administrativo</SelectItem>
                         <SelectItem value="admin">Administrador</SelectItem>
                       </SelectContent>
                     </Select>

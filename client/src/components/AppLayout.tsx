@@ -17,7 +17,7 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Link, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -38,18 +38,20 @@ interface NavItem {
   href: string;
   icon: React.ElementType;
   adminOnly?: boolean;
-  chefeOnly?: boolean;
+  permissionKey?: string; // se definido, só aparece se o perfil tiver essa permissão
+  badge?: string;
 }
 
-const navItems: NavItem[] = [
-  { label: "Dashboard", href: "/", icon: LayoutDashboard },
-  { label: "Minhas Horas", href: "/horas", icon: Clock },
-  { label: "Novo Registro", href: "/novo", icon: ClipboardList },
-  { label: "Relatórios", href: "/relatorios", icon: BarChart3 },
-  { label: "Meu Setor", href: "/meu-setor", icon: Building2, chefeOnly: true },
-  { label: "Painel Admin", href: "/admin", icon: Shield, adminOnly: true },
-  { label: "Usuários", href: "/admin/usuarios", icon: Users, adminOnly: true },
-  { label: "Setores", href: "/admin/setores", icon: Building2, adminOnly: true },
+const ALL_NAV_ITEMS: NavItem[] = [
+  { label: "Dashboard",    href: "/",                icon: LayoutDashboard, permissionKey: "view_dashboard" },
+  { label: "Minhas Horas", href: "/horas",           icon: Clock,           permissionKey: "view_own_overtime" },
+  { label: "Novo Registro",href: "/novo",            icon: ClipboardList,   permissionKey: "create_overtime" },
+  { label: "Relatórios",   href: "/relatorios",     icon: BarChart3,       permissionKey: "view_reports" },
+  { label: "Meu Setor",    href: "/meu-setor",      icon: Building2,       permissionKey: "view_setor", badge: "Setor" },
+  { label: "Painel Admin", href: "/admin",           icon: Shield,          adminOnly: true },
+  { label: "Usuários",     href: "/admin/usuarios", icon: Users,           adminOnly: true },
+  { label: "Setores",      href: "/admin/setores",  icon: Building2,       adminOnly: true },
+  { label: "Permissões",   href: "/admin/permissoes", icon: Settings,      adminOnly: true },
 ];
 
 interface AppLayoutProps {
@@ -67,6 +69,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
   });
   // MUST be called unconditionally before any early returns
   const { data: myDept } = trpc.chefe.myDepartment.useQuery(undefined, { enabled: !!user });
+  const { data: myPerms } = trpc.permissions.mine.useQuery(undefined, { enabled: !!user, staleTime: 60_000 });
 
   if (loading) {
     return (
@@ -102,12 +105,13 @@ export default function AppLayout({ children }: AppLayoutProps) {
   }
 
   const isAdmin = user?.role === "admin";
-  const isChefe = !!myDept;
-  const visibleNav = navItems.filter((item) => {
-    if (item.adminOnly && !isAdmin) return false;
-    if (item.chefeOnly && !isChefe && !isAdmin) return false;
-    return true;
-  });
+  const visibleNav = useMemo(() => {
+    return ALL_NAV_ITEMS.filter((item) => {
+      if (item.adminOnly) return isAdmin;
+      if (item.permissionKey && myPerms) return !!myPerms[item.permissionKey];
+      return true;
+    });
+  }, [isAdmin, myPerms]);
 
   const initials = (user?.name ?? "U")
     .split(" ")
@@ -157,9 +161,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
                     Admin
                   </span>
                 )}
-                {!collapsed && item.chefeOnly && !item.adminOnly && (
+                {!collapsed && item.badge && !item.adminOnly && (
                   <span className="ml-auto text-[9px] font-bold uppercase tracking-wider bg-amber-500/20 text-amber-600 px-1.5 py-0.5 rounded-full">
-                    Chefe
+                    {item.badge}
                   </span>
                 )}
               </div>
@@ -193,7 +197,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
               {!collapsed && (
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-semibold text-sidebar-foreground truncate">{user?.name ?? "Usuário"}</p>
-                  <p className="text-[10px] text-sidebar-foreground/50 truncate capitalize">{user?.role === "admin" ? "Administrador" : "Funcionário"}</p>
+                  <p className="text-[10px] text-sidebar-foreground/50 truncate capitalize">{user?.role === "admin" ? "Administrador" : user?.role === "chefe" ? "Chefe" : user?.role === "auxiliar_administrativo" ? "Aux. Administrativo" : "Usuário"}</p>
                 </div>
               )}
             </button>

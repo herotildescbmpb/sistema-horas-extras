@@ -17,6 +17,7 @@ import EscalaWizard from "./pages/EscalaWizard";
 import EscalaDetail from "./pages/EscalaDetail";
 import NovoRegistro from "./pages/NovoRegistro";
 import MeuSetor from "./pages/MeuSetor";
+import AdminPermissions from "./pages/AdminPermissions";
 
 function Router() {
   return (
@@ -30,6 +31,7 @@ function Router() {
       <Route path="/admin" component={AdminPanel} />
       <Route path="/admin/usuarios" component={AdminUsers} />
       <Route path="/admin/setores" component={AdminDepartments} />
+      <Route path="/admin/permissoes" component={AdminPermissions} />
       <Route path="/escalas" component={EscalaList} />
       <Route path="/escalas/nova" component={EscalaWizard} />
       <Route path="/escalas/:id" component={EscalaDetail} />
