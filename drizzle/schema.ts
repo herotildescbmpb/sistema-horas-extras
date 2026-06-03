@@ -129,6 +129,19 @@ export const escalaItems = mysqlTable("escala_items", {
 export type EscalaItem = typeof escalaItems.$inferSelect;
 export type InsertEscalaItem = typeof escalaItems.$inferInsert;
 
+// Tokens de recuperação de senha (válidos por 1 hora, uso único)
+export const passwordResetTokens = mysqlTable("password_reset_tokens", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  token: varchar("token", { length: 128 }).notNull().unique(),
+  expiresAt: timestamp("expiresAt").notNull(),
+  usedAt: timestamp("usedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
+export type InsertPasswordResetToken = typeof passwordResetTokens.$inferInsert;
+
 // Notificações para chefes de setor
 export const notifications = mysqlTable("notifications", {
   id: int("id").autoincrement().primaryKey(),

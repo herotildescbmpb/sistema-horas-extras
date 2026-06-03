@@ -184,3 +184,18 @@
 - [x] Definir senha padrão 20262026 para os 5 usuários pré-cadastrados sem senha (admin, Hedwing, Jose Fragoso, Igor, Síntia)
 - [x] Adicionar guard no sdk.ts: não tentar sincronizar com OAuth para openIds locais (pre_* ou local_*)
 - [x] Testar login de usuário pré-cadastrado do início ao fim (admin@cbmpb.pb.gov.br → troca de senha → dashboard)
+
+## Recuperação de Senha por E-mail (v16)
+
+- [x] Instalar SDK Resend e criar helper server/_core/email.ts com sendEmail e sendPasswordResetEmail
+- [x] Criar tabela password_reset_tokens no schema Drizzle e aplicar migração SQL
+- [x] Funções db.ts: createPasswordResetToken, validatePasswordResetToken, consumePasswordResetToken
+- [x] Endpoint auth.forgotPassword: gerar token, salvar no banco, enviar e-mail com link (1h de validade)
+- [x] Endpoint auth.resetPasswordByToken: validar token, atualizar senha, consumir token
+- [x] Endpoint auth.validateResetToken: pré-validar token antes de exibir formulário
+- [x] Tela ForgotPassword (/forgot-password): formulário de e-mail com estado de confirmação
+- [x] Tela ResetPassword (/reset-password?token=...): formulário nova senha + confirmação + toggle visibilidade
+- [x] Adicionar link "Esqueci minha senha" na tela de Login
+- [x] Corrigir useQueryParam para usar window.location.search (wouter não expõe query string)
+- [x] Testar fluxo completo de ponta a ponta (token gerado → redefinição → sucesso)
+- [ ] Verificar domínio dalgest.sbs no painel Resend para habilitar envio real de e-mails

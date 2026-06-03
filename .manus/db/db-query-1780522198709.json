@@ -1,0 +1,13 @@
+{
+  "query": "SELECT token FROM password_reset_tokens WHERE usedAt IS NULL ORDER BY createdAt DESC LIMIT 1;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4XMYXLTg6g9ZctA.83aa4a08e73e --database cDx3jwjHrzRKbmDZmbrJYX --execute SELECT token FROM password_reset_tokens WHERE usedAt IS NULL ORDER BY createdAt DESC LIMIT 1;",
+  "rows": [
+    {
+      "token": "ea3a75f1a582f9db82f3e892ede5e4bcb2c588c943ef878018f9e4469a301a991eb9d39556abdbd13d1ea9d63758e4af"
+    }
+  ],
+  "messages": [],
+  "stdout": "token\nea3a75f1a582f9db82f3e892ede5e4bcb2c588c943ef878018f9e4469a301a991eb9d39556abdbd13d1ea9d63758e4af\n",
+  "stderr": "",
+  "execution_time_ms": 264
+}

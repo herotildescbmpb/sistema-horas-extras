@@ -55,7 +55,11 @@ import {
   getUserByEmailWithPassword,
   updateUserPassword,
   resetUserPassword,
+  createPasswordResetToken,
+  validatePasswordResetToken,
+  consumePasswordResetToken,
 } from "./db";
+import { sendPasswordResetEmail } from "./_core/email";
 
 // ─── Admin guard ──────────────────────────────────────────────────────────────
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -145,6 +149,59 @@ export const appRouter = router({
       .mutation(async ({ input }) => {
         await resetUserPassword(input.userId);
         return { success: true };
+      }),
+
+    // Solicitar recuperação de senha por e-mail
+    forgotPassword: publicProcedure
+      .input(z.object({
+        email: z.string().email("E-mail inválido"),
+        origin: z.string().url("Origin inválida"),
+      }))
+      .mutation(async ({ input }) => {
+        // Resposta genérica para não revelar se o e-mail existe
+        const user = await getUserByEmailWithPassword(input.email);
+        if (!user || !user.isActive) {
+          // Retorna sucesso mesmo se não encontrar (evita enumeração de e-mails)
+          return { success: true };
+        }
+        try {
+          const token = await createPasswordResetToken(user.id);
+          const resetUrl = `${input.origin}/reset-password?token=${token}`;
+          await sendPasswordResetEmail(input.email, user.name || "Usuário", resetUrl);
+        } catch (err) {
+          console.error("[ForgotPassword] Failed to send email:", err);
+          // Não expõe o erro ao cliente
+        }
+        return { success: true };
+      }),
+
+    // Redefinir senha via token de recuperação
+    resetPasswordByToken: publicProcedure
+      .input(z.object({
+        token: z.string().min(1, "Token obrigatório"),
+        newPassword: z.string().min(6, "A nova senha deve ter pelo menos 6 caracteres."),
+      }))
+      .mutation(async ({ input }) => {
+        const userId = await validatePasswordResetToken(input.token);
+        if (!userId) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Link de recuperação inválido ou expirado. Solicite um novo.",
+          });
+        }
+        const bcrypt = await import("bcryptjs");
+        const newHash = await bcrypt.hash(input.newPassword, 10);
+        await updateUserPassword(userId, newHash);
+        await consumePasswordResetToken(input.token);
+        return { success: true };
+      }),
+
+    // Validar token de recuperação (para pré-validar antes de mostrar o formulário)
+    validateResetToken: publicProcedure
+      .input(z.object({ token: z.string().min(1) }))
+      .query(async ({ input }) => {
+        const userId = await validatePasswordResetToken(input.token);
+        return { valid: !!userId };
       }),
   }),
 

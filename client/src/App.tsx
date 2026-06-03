@@ -21,6 +21,8 @@ import MeuSetor from "./pages/MeuSetor";
 import AdminPermissions from "./pages/AdminPermissions";
 import UserGuide from "./pages/UserGuide";
 import Login from "./pages/Login";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 
 function ProtectedRouter() {
   return (
@@ -53,6 +55,8 @@ function Router() {
   return (
     <Switch>
       <Route path="/login" component={Login} />
+      <Route path="/forgot-password" component={ForgotPassword} />
+      <Route path="/reset-password" component={ResetPassword} />
       <Route component={ProtectedRouter} />
     </Switch>
   );

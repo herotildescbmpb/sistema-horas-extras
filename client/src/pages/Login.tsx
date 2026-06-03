@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Clock, Eye, EyeOff, LogIn, Shield } from "lucide-react";
+import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -101,6 +102,14 @@ export default function Login() {
                 {errors.password && (
                   <p className="text-xs text-destructive">{errors.password.message}</p>
                 )}
+              </div>
+
+              <div className="flex justify-end">
+                <Link href="/forgot-password">
+                  <span className="text-xs text-muted-foreground hover:text-foreground cursor-pointer transition-colors">
+                    Esqueci minha senha
+                  </span>
+                </Link>
               </div>
 
               <Button

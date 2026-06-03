@@ -1,6 +1,5 @@
-import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
+import { and, desc, eq, gt, gte, isNull, like, lte, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { like, or } from "drizzle-orm";
 import {
   departments,
   escalaItems,
@@ -13,6 +12,7 @@ import {
   InsertUser,
   notifications,
   overtimeRecords,
+  passwordResetTokens,
   rolePermissions,
   servidores,
   users,
@@ -893,4 +893,63 @@ export async function resetUserPassword(userId: number) {
   const bcrypt = await import("bcryptjs");
   const passwordHash = await bcrypt.hash("20262026", 10);
   await db.update(users).set({ passwordHash, mustChangePassword: true }).where(eq(users.id, userId));
+}
+
+// ─── Tokens de Recuperação de Senha ──────────────────────────────────────────
+
+/**
+ * Cria um token de recuperação de senha para o usuário.
+ * Invalida tokens anteriores não utilizados do mesmo usuário.
+ */
+export async function createPasswordResetToken(userId: number): Promise<string> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const { randomBytes } = await import("crypto");
+  const token = randomBytes(48).toString("hex"); // 96 chars hex
+  const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hora
+
+  // Invalida tokens anteriores não usados do mesmo usuário
+  await db
+    .update(passwordResetTokens)
+    .set({ usedAt: new Date() })
+    .where(and(eq(passwordResetTokens.userId, userId), isNull(passwordResetTokens.usedAt)));
+
+  await db.insert(passwordResetTokens).values({ userId, token, expiresAt });
+  return token;
+}
+
+/**
+ * Valida um token de recuperação de senha.
+ * Retorna o userId se válido, undefined se inválido/expirado/já usado.
+ */
+export async function validatePasswordResetToken(token: string): Promise<number | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db
+    .select()
+    .from(passwordResetTokens)
+    .where(
+      and(
+        eq(passwordResetTokens.token, token),
+        isNull(passwordResetTokens.usedAt),
+        gt(passwordResetTokens.expiresAt, new Date())
+      )
+    )
+    .limit(1);
+
+  return result[0]?.userId;
+}
+
+/**
+ * Marca um token como usado (após a senha ser redefinida com sucesso).
+ */
+export async function consumePasswordResetToken(token: string): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db
+    .update(passwordResetTokens)
+    .set({ usedAt: new Date() })
+    .where(eq(passwordResetTokens.token, token));
 }
