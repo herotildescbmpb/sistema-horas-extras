@@ -1,0 +1,90 @@
+{
+  "query": "SELECT id, name, email, openId, loginMethod, isActive, mustChangePassword, passwordHash IS NOT NULL as has_password FROM users WHERE loginMethod = 'pre-cadastro' OR openId LIKE 'pre_%' LIMIT 15;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4XMYXLTg6g9ZctA.83aa4a08e73e --database cDx3jwjHrzRKbmDZmbrJYX --execute SELECT id, name, email, openId, loginMethod, isActive, mustChangePassword, passwordHash IS NOT NULL as has_password FROM users WHERE loginMethod = 'pre-cadastro' OR openId LIKE 'pre_%' LIMIT 15;",
+  "rows": [
+    {
+      "id": "930009",
+      "name": "Administrador DAL",
+      "email": "admin@cbmpb.pb.gov.br",
+      "openId": "pre_admin_dal",
+      "loginMethod": "pre-cadastro",
+      "isActive": "1",
+      "mustChangePassword": "0",
+      "has_password": "0"
+    },
+    {
+      "id": "930010",
+      "name": "Kaliny Simony Fideles de Araújo Morais",
+      "email": "kalinysimony@gmail.com",
+      "openId": "pre_kaliny",
+      "loginMethod": "pre-cadastro",
+      "isActive": "1",
+      "mustChangePassword": "0",
+      "has_password": "1"
+    },
+    {
+      "id": "930011",
+      "name": "Keoma do Nascimento Silva",
+      "email": "omoicano@hotmail.com",
+      "openId": "pre_keoma",
+      "loginMethod": "pre-cadastro",
+      "isActive": "1",
+      "mustChangePassword": "0",
+      "has_password": "1"
+    },
+    {
+      "id": "930012",
+      "name": "Hedwing Tayse Paiva de Queiroz",
+      "email": "taysepqueiroz@gmail.com",
+      "openId": "pre_hedwing",
+      "loginMethod": "pre-cadastro",
+      "isActive": "1",
+      "mustChangePassword": "0",
+      "has_password": "0"
+    },
+    {
+      "id": "930013",
+      "name": "Jose Fragoso da Silva Neto",
+      "email": "fragoso.neto.jf@gmail.com",
+      "openId": "pre_jose_fragoso",
+      "loginMethod": "pre-cadastro",
+      "isActive": "1",
+      "mustChangePassword": "0",
+      "has_password": "0"
+    },
+    {
+      "id": "930014",
+      "name": "Matheus Pinheiro do Amaral",
+      "email": "01matheus@gmail.com",
+      "openId": "pre_matheus",
+      "loginMethod": "pre-cadastro",
+      "isActive": "1",
+      "mustChangePassword": "0",
+      "has_password": "1"
+    },
+    {
+      "id": "930015",
+      "name": "Igor Soares Leal",
+      "email": "dal4cbmpb193@gmail.com",
+      "openId": "pre_igor",
+      "loginMethod": "pre-cadastro",
+      "isActive": "1",
+      "mustChangePassword": "0",
+      "has_password": "0"
+    },
+    {
+      "id": "930016",
+      "name": "Síntia Barbosa Sena",
+      "email": "sintiasenna@gmail.com",
+      "openId": "pre_sintia",
+      "loginMethod": "pre-cadastro",
+      "isActive": "1",
+      "mustChangePassword": "0",
+      "has_password": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\temail\topenId\tloginMethod\tisActive\tmustChangePassword\thas_password\n930009\tAdministrador DAL\tadmin@cbmpb.pb.gov.br\tpre_admin_dal\tpre-cadastro\t1\t0\t0\n930010\tKaliny Simony Fideles de Araújo Morais\tkalinysimony@gmail.com\tpre_kaliny\tpre-cadastro\t1\t0\t1\n930011\tKeoma do Nascimento Silva\tomoicano@hotmail.com\tpre_keoma\tpre-cadastro\t1\t0\t1\n930012\tHedwing Tayse Paiva de Queiroz\ttaysepqueiroz@gmail.com\tpre_hedwing\tpre-cadastro\t1\t0\t0\n930013\tJose Fragoso da Silva Neto\tfragoso.neto.jf@gmail.com\tpre_jose_fragoso\tpre-cadastro\t1\t0\t0\n930014\tMatheus Pinheiro do Amaral\t01matheus@gmail.com\tpre_matheus\tpre-cadastro\t1\t0\t1\n930015\tIgor Soares Leal\tdal4cbmpb193@gmail.com\tpre_igor\tpre-cadastro\t1\t0\t0\n930016\tSíntia Barbosa Sena\tsintiasenna@gmail.com\tpre_sintia\tpre-cadastro\t1\t0\t0\n",
+  "stderr": "",
+  "execution_time_ms": 272
+}

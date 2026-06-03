@@ -177,3 +177,10 @@
 - [x] OvertimeForm: endDate enviado no payload (isoEndDate)
 - [x] drizzle/relations.ts: relações declaradas (usersRelations, departmentsRelations, overtimeRecordsRelations)
 - [x] client/index.html: comentário legado de Google Fonts removido
+
+## Correção do Fluxo de Autenticação Local (v15)
+
+- [x] Auditar localLogin, contexto JWT e função getUserByEmail no fluxo completo
+- [x] Definir senha padrão 20262026 para os 5 usuários pré-cadastrados sem senha (admin, Hedwing, Jose Fragoso, Igor, Síntia)
+- [x] Adicionar guard no sdk.ts: não tentar sincronizar com OAuth para openIds locais (pre_* ou local_*)
+- [x] Testar login de usuário pré-cadastrado do início ao fim (admin@cbmpb.pb.gov.br → troca de senha → dashboard)
