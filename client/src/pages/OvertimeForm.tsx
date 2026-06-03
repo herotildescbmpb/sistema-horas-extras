@@ -180,7 +180,20 @@ function fromISO(iso: string): string {
 }
 
 const FIXED_HOLIDAYS: [number, number][] = [
-  [1,1],[4,21],[5,1],[9,7],[10,12],[11,2],[11,15],[12,25],
+  // Nacionais
+  [1,1],   // Confraternização Universal
+  [4,21],  // Tiradentes
+  [5,1],   // Dia do Trabalho
+  [9,7],   // Independência do Brasil
+  [10,12], // Nossa Senhora Aparecida
+  [11,2],  // Finados
+  [11,15], // Proclamação da República
+  [11,20], // Consciência Negra (nacional desde 2024)
+  [12,25], // Natal
+  // Estaduais – Paraíba
+  [8,5],   // Nossa Senhora das Neves (padroeira da PB)
+  // Municipais – João Pessoa
+  [10,4],  // São Francisco de Assis (padroeiro de JP)
 ];
 
 // Easter calculation (Meeus/Jones/Butcher algorithm)
@@ -244,7 +257,9 @@ function calcMinutes(start: string, end: string): number {
   const [eh, em] = end.split(":").map(Number);
   const s = sh * 60 + sm;
   let e = eh * 60 + em;
-  if (e <= s) e += 24 * 60;
+  // Apenas adiciona 24h se o fim for ESTRITAMENTE menor (turno vira meia-noite)
+  // Se forem iguais, retorna 0 para o guard rejeitar
+  if (e < s) e += 24 * 60;
   return e - s;
 }
 
@@ -262,13 +277,21 @@ const schema = z.object({
   matricula: z.string().min(1, "Matrícula obrigatória"),
   posto: z.string().optional(),
   date: z.string().regex(/^\d{2}\/\d{2}\/\d{4}$/, "Data inválida — use DD/MM/AAAA"),
+  endDate: z
+    .string()
+    .regex(/^\d{2}\/\d{2}\/\d{4}$/, "Data final inválida — use DD/MM/AAAA")
+    .optional()
+    .or(z.literal("")),
   startTime: z.string().min(1, "Hora início obrigatória"),
   endTime: z.string().min(1, "Hora fim obrigatória"),
   funcao: z.string().min(1, "Função obrigatória"),
   modalidade: z.string().min(1, "Modalidade obrigatória"),
   reason: z.string().min(1, "Justificativa obrigatória"),
   department: z.string().min(1, "Setor obrigatório"),
-});
+}).refine(
+  (data) => data.startTime !== data.endTime,
+  { message: "Hora início e hora fim não podem ser iguais", path: ["endTime"] }
+);
 
 type FormData = z.infer<typeof schema>;
 
@@ -292,7 +315,7 @@ export default function OvertimeForm() {
     resolver: zodResolver(schema),
     defaultValues: {
       tipoEscala: "", servidorNome: "", matricula: "", posto: "",
-      date: "", startTime: "", endTime: "", funcao: "", modalidade: "",
+      date: "", endDate: "", startTime: "", endTime: "", funcao: "", modalidade: "",
       reason: "", department: "",
     },
   });
@@ -388,12 +411,21 @@ export default function OvertimeForm() {
 
   function onSubmit(data: FormData) {
     const isoDate = toISO(data.date);
+    const isoEndDate = data.endDate ? toISO(data.endDate) : isoDate;
     const dayType = getDayType(data.date);
     const totalMinutes = calcMinutes(data.startTime, data.endTime);
+
+    // Guard client-side: impede envio com duração inválida (0 min ou >= 24h)
+    if (totalMinutes <= 0 || totalMinutes >= 1440) {
+      toast.error("Duração inválida. Verifique os horários de início e fim.");
+      return;
+    }
+
     const payload = {
       tipoEscala: data.tipoEscala,
       servidor: data.matricula,
       date: isoDate,
+      endDate: isoEndDate,
       startTime: data.startTime,
       endTime: data.endTime,
       funcao: data.funcao,

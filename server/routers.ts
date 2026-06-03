@@ -73,7 +73,9 @@ function calcMinutes(start: string, end: string): number {
   const [eh, em] = end.split(":").map(Number);
   const startTotal = sh * 60 + (sm || 0);
   let endTotal = eh * 60 + (em || 0);
-  if (endTotal <= startTotal) endTotal += 24 * 60;
+  // Apenas adiciona 24h se o fim for ESTRITAMENTE menor (turno vira meia-noite)
+  // Se forem iguais, retorna 0 para o guard rejeitar
+  if (endTotal < startTotal) endTotal += 24 * 60;
   return endTotal - startTotal;
 }
 
@@ -328,6 +330,14 @@ export const appRouter = router({
         const totalMinutes = input.totalMinutes ?? calcMinutes(input.startTime, input.endTime);
         const multiplier = MULTIPLIERS[input.dayType];
         const dept = input.department ?? (ctx.user as any).department ?? undefined;
+        // Guard: rejeita duração zero, negativa ou >= 24h
+        if (totalMinutes <= 0 || totalMinutes >= 1440) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Duração inválida: ${totalMinutes} minutos. Verifique horário de início e fim.`,
+          });
+        }
+
         // Chefe e Admin aprovam diretamente; Auxiliar Administrativo fica pendente
         const autoApprove = ctx.user.role === "admin" || ctx.user.role === "chefe";
         const record = await createOvertimeRecord({
@@ -397,6 +407,14 @@ export const appRouter = router({
         const start = data.startTime ?? record.startTime;
         const end = data.endTime ?? record.endTime;
         const totalMinutes = data.totalMinutes ?? calcMinutes(start, end);
+
+        if (totalMinutes <= 0 || totalMinutes >= 1440) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Duração inválida: ${totalMinutes} minutos. Verifique os horários.`,
+          });
+        }
+
         const dayType = data.dayType ?? record.dayType;
         const multiplier = MULTIPLIERS[dayType];
         return updateOvertimeRecord(id, { ...data, totalMinutes, multiplier });

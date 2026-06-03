@@ -163,3 +163,17 @@
 - [x] Remover AppLayout duplicado de NovoRegistro.tsx, MeuSetor.tsx, EscalaWizard.tsx, OvertimeForm.tsx, EscalaList.tsx, EscalaDetail.tsx
 - [x] Implementar lógica de aprovação diferenciada por perfil: chefe/admin → status "approved"; auxiliar_administrativo → status "pending" (overtime.create)
 - [x] Implementar mesma lógica no lançamento de escalas em lote: launchEscala aceita parâmetro autoApprove; escalas.launch passa autoApprove baseado no role
+
+## Correções de Validação e Manutenção (v14)
+
+- [x] Fix 9 — Guard server-side em overtime.create: rejeita totalMinutes <= 0 ou >= 1440
+- [x] Fix 9 — Guard server-side em overtime.update: mesma validação de duração
+- [x] Fix 10 — calcMinutes backend: corrigido para usar < em vez de <= (horários iguais retornam 0)
+- [x] Fix 10 — calcMinutes frontend (OvertimeForm): mesma correção para consistência
+- [x] OvertimeForm: feriados expandidos (Consciência Negra, Nossa Senhora das Neves, São Francisco de Assis)
+- [x] OvertimeForm: schema Zod com refine validando startTime !== endTime
+- [x] OvertimeForm: campo endDate adicionado ao schema e defaultValues
+- [x] OvertimeForm: guard client-side antes do envio (totalMinutes <= 0 ou >= 1440)
+- [x] OvertimeForm: endDate enviado no payload (isoEndDate)
+- [x] drizzle/relations.ts: relações declaradas (usersRelations, departmentsRelations, overtimeRecordsRelations)
+- [x] client/index.html: comentário legado de Google Fonts removido
