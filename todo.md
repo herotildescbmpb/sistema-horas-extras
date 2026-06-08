@@ -215,3 +215,18 @@
 - [x] Atualizar overtime.listAll para aceitar filtro department
 - [x] Atualizar a query de listagem de registros na tela de Relatórios para respeitar o setor selecionado
 - [x] Testar dropdown com 9 setores carregados corretamente
+
+## Ajustes na Tela de Relatórios — Servidor vs Cadastrante (v20)
+
+- [ ] Registros do Período: exibir nome do servidor (campo `servidor` do registro) em vez do usuário cadastrante
+- [ ] Filtro Funcionário: listar servidores distintos com horas cadastradas no período, não usuários do sistema
+- [ ] Endpoint backend: retornar lista de servidores únicos para popular o dropdown de filtro
+
+## Ajustes na Tela de Relatórios — Servidor vs Cadastrante (v20)
+
+- [x] Nos "Registros do Período", exibir o nome do servidor (nomeServidor via JOIN com tabela servidores) em vez do usuário cadastrante
+- [x] No filtro renomeado de "Funcionário" para "Servidor", listar servidores distintos com horas no período via endpoint reports.listServidores
+- [x] Filtro por servidor passa matrícula para overtime.listAll e exportCsvDal
+- [x] getAllOvertimeRecords aceita filtro por servidor (matrícula)
+- [x] overtime.listAll aceita filtro servidor no input schema
+- [x] exportCsvDal aceita filtro servidor no input schema

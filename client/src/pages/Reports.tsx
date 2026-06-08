@@ -74,18 +74,25 @@ export default function Reports() {
 
   const [startDate, setStartDate] = useState(format(startOfMonth(new Date()), "yyyy-MM-dd"));
   const [endDate, setEndDate] = useState(format(endOfMonth(new Date()), "yyyy-MM-dd"));
-  const [selectedUserId, setSelectedUserId] = useState<string>("all");
+  const [selectedServidor, setSelectedServidor] = useState<string>("all");
   const [selectedDepartment, setSelectedDepartment] = useState<string>("all");
   const [exporting, setExporting] = useState(false);
 
-  const { data: users } = trpc.users.list.useQuery(undefined, { enabled: isAdmin });
+  const { data: servidoresList } = trpc.reports.listServidores.useQuery(
+    {
+      startDate,
+      endDate,
+      department: selectedDepartment !== "all" ? selectedDepartment : undefined,
+    },
+    { enabled: isAdmin }
+  );
   const { data: departments } = trpc.departments.list.useQuery();
 
   const { data: records, isLoading } = isAdmin
     ? trpc.overtime.listAll.useQuery({
         startDate,
         endDate,
-        userId: selectedUserId !== "all" ? parseInt(selectedUserId) : undefined,
+        servidor: selectedServidor !== "all" ? selectedServidor : undefined,
         department: selectedDepartment !== "all" ? selectedDepartment : undefined,
       })
     : trpc.overtime.list.useQuery({ startDate, endDate });
@@ -94,7 +101,6 @@ export default function Reports() {
     {
       startDate,
       endDate,
-      userId: isAdmin && selectedUserId !== "all" ? parseInt(selectedUserId) : undefined,
     },
     { enabled: false }
   );
@@ -103,7 +109,7 @@ export default function Reports() {
     {
       startDate,
       endDate,
-      userId: isAdmin && selectedUserId !== "all" ? parseInt(selectedUserId) : undefined,
+      servidor: isAdmin && selectedServidor !== "all" ? selectedServidor : undefined,
       department: isAdmin && selectedDepartment !== "all" ? selectedDepartment : undefined,
     },
     { enabled: false }
@@ -269,16 +275,16 @@ export default function Reports() {
             </div>
             {isAdmin && (
               <div className="space-y-1">
-                <Label className="text-xs">Funcionário</Label>
-                <Select value={selectedUserId} onValueChange={setSelectedUserId}>
+                <Label className="text-xs">Servidor</Label>
+                <Select value={selectedServidor} onValueChange={setSelectedServidor}>
                   <SelectTrigger className="h-9 w-full sm:w-52 text-sm">
                     <SelectValue placeholder="Todos" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Todos os funcionários</SelectItem>
-                    {users?.map((u) => (
-                      <SelectItem key={u.id} value={String(u.id)}>
-                        {u.name ?? u.email ?? `Usuário #${u.id}`}
+                    <SelectItem value="all">Todos os servidores</SelectItem>
+                    {servidoresList?.map((s) => (
+                      <SelectItem key={s.matricula} value={s.matricula}>
+                        {s.nome ?? s.matricula}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -435,9 +441,9 @@ export default function Reports() {
                     <div key={record.id} className="flex items-center gap-3 px-6 py-3 hover:bg-muted/20 transition-colors">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          {isAdmin && "userName" in record && (
+                          {isAdmin && (
                             <span className="text-xs font-semibold text-foreground">
-                              {(record as any).userName ?? "Funcionário"}
+                              {(record as any).nomeServidor ?? (record as any).servidor ?? "Servidor"}
                             </span>
                           )}
                           <span className="text-xs text-muted-foreground">

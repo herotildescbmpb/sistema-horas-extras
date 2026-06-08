@@ -272,6 +272,7 @@ export async function getAllOvertimeRecords(filters?: {
   status?: string;
   userId?: number;
   department?: string;
+  servidor?: string;
 }) {
   const db = await getDb();
   if (!db) return [];
@@ -286,6 +287,7 @@ export async function getAllOvertimeRecords(filters?: {
   }
   if (filters?.userId) conditions.push(eq(overtimeRecords.userId, filters.userId));
   if (filters?.department) conditions.push(eq(users.department, filters.department));
+  if (filters?.servidor) conditions.push(eq(overtimeRecords.servidor, filters.servidor));
 
   const records = await db
     .select({
@@ -315,9 +317,11 @@ export async function getAllOvertimeRecords(filters?: {
       userEmail: users.email,
       userDepartment: users.department,
       userMatricula: users.matricula,
+      nomeServidor: servidores.nome,
     })
     .from(overtimeRecords)
     .leftJoin(users, eq(overtimeRecords.userId, users.id))
+    .leftJoin(servidores, eq(overtimeRecords.servidor, servidores.matricula))
     .where(conditions.length > 0 ? and(...conditions) : undefined)
     .orderBy(desc(overtimeRecords.date));
 
@@ -954,4 +958,41 @@ export async function consumePasswordResetToken(token: string): Promise<void> {
     .update(passwordResetTokens)
     .set({ usedAt: new Date() })
     .where(eq(passwordResetTokens.token, token));
+}
+
+/**
+ * Retorna os servidores únicos que possuem horas cadastradas no período,
+ * fazendo JOIN com a tabela servidores para obter o nome completo.
+ * Usado para popular o dropdown de filtro na tela de Relatórios.
+ */
+export async function getServidoresUnicos(filters?: {
+  startDate?: string;
+  endDate?: string;
+  department?: string;
+}): Promise<Array<{ matricula: string; nome: string | null }>> {
+  const db = await getDb();
+  if (!db) return [];
+
+  const conditions = [];
+  if (filters?.startDate) conditions.push(gte(overtimeRecords.date, filters.startDate));
+  if (filters?.endDate) conditions.push(lte(overtimeRecords.date, filters.endDate));
+  if (filters?.department) conditions.push(eq(users.department, filters.department));
+
+  const rows = await db
+    .selectDistinct({
+      matricula: overtimeRecords.servidor,
+      nome: servidores.nome,
+    })
+    .from(overtimeRecords)
+    .leftJoin(servidores, eq(overtimeRecords.servidor, servidores.matricula))
+    .leftJoin(users, eq(overtimeRecords.userId, users.id))
+    .where(
+      and(
+        sql`${overtimeRecords.servidor} IS NOT NULL`,
+        ...(conditions.length > 0 ? conditions : [])
+      )
+    )
+    .orderBy(servidores.nome);
+
+  return rows.filter((r) => r.matricula != null) as Array<{ matricula: string; nome: string | null }>;
 }

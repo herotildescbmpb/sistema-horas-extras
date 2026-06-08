@@ -58,6 +58,7 @@ import {
   createPasswordResetToken,
   validatePasswordResetToken,
   consumePasswordResetToken,
+  getServidoresUnicos,
 } from "./db";
 import { sendPasswordResetEmail, sendWelcomeEmail } from "./_core/email";
 
@@ -373,6 +374,7 @@ export const appRouter = router({
           status: z.string().optional(),
           userId: z.number().optional(),
           department: z.string().optional(),
+          servidor: z.string().optional(),
         })
       )
       .query(({ input }) => getAllOvertimeRecords(input)),
@@ -516,8 +518,28 @@ export const appRouter = router({
       ),
   }),
 
-  // ─── Reports ──────────────────────────────────────────────────────────────────
+  // ─── Reports ──────────────────────────────────────────────────────────────────────────────
   reports: router({
+    /**
+     * Retorna servidores únicos com horas cadastradas no período.
+     * Usado para popular o dropdown de filtro na tela de Relatórios.
+     */
+    listServidores: adminProcedure
+      .input(
+        z.object({
+          startDate: z.string().optional(),
+          endDate: z.string().optional(),
+          department: z.string().optional(),
+        })
+      )
+      .query(({ input }) =>
+        getServidoresUnicos({
+          startDate: input.startDate,
+          endDate: input.endDate,
+          department: input.department,
+        })
+      ),
+
     monthSummary: protectedProcedure
       .input(z.object({ year: z.number(), month: z.number() }))
       .query(({ ctx, input }) => getMonthSummary(ctx.user.id, input.year, input.month)),
@@ -577,6 +599,7 @@ export const appRouter = router({
           endDate: z.string(),
           userId: z.number().optional(),
           department: z.string().optional(),
+          servidor: z.string().optional(),
         })
       )
       .query(async ({ ctx, input }) => {
@@ -585,9 +608,9 @@ export const appRouter = router({
         let records;
 
         if (isAdmin && input.userId) {
-          records = await getAllOvertimeRecords({ startDate: input.startDate, endDate: input.endDate, userId: input.userId, department: input.department });
+          records = await getAllOvertimeRecords({ startDate: input.startDate, endDate: input.endDate, userId: input.userId, department: input.department, servidor: input.servidor });
         } else if (isAdmin) {
-          records = await getAllOvertimeRecords({ startDate: input.startDate, endDate: input.endDate, department: input.department });
+          records = await getAllOvertimeRecords({ startDate: input.startDate, endDate: input.endDate, department: input.department, servidor: input.servidor });
         } else if (isChefe) {
           const dept = await getDepartmentByChefe(ctx.user.id);
           if (!dept) throw new TRPCError({ code: "FORBIDDEN", message: "Você não é chefe de nenhum setor." });
