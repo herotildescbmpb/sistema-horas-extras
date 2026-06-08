@@ -169,18 +169,27 @@ export default function Reports() {
   const approvedMinutes = records?.filter((r) => r.status === "approved").reduce((s, r) => s + r.totalMinutes, 0) ?? 0;
   const pendingCount = records?.filter((r) => r.status === "pending").length ?? 0;
 
-  // Chart data by day type
-  const byDayType = {
-    weekday: records?.filter((r) => r.dayType === "weekday").reduce((s, r) => s + r.totalMinutes, 0) ?? 0,
-    saturday: records?.filter((r) => r.dayType === "saturday").reduce((s, r) => s + r.totalMinutes, 0) ?? 0,
-    sunday_holiday: records?.filter((r) => r.dayType === "sunday_holiday").reduce((s, r) => s + r.totalMinutes, 0) ?? 0,
-  };
+  // Chart data by tipo de serviço (modalidade: Especial vs Extraordinário)
+  const byModalidade: Record<string, number> = {};
+  records?.forEach((r) => {
+    const key = (r as any).modalidade || "Não informado";
+    byModalidade[key] = (byModalidade[key] ?? 0) + r.totalMinutes;
+  });
 
-  const chartData = [
-    { name: "Dia Útil", horas: parseFloat((byDayType.weekday / 60).toFixed(2)), fill: "var(--color-chart-4)" },
-    { name: "Sábado", horas: parseFloat((byDayType.saturday / 60).toFixed(2)), fill: "var(--color-chart-1)" },
-    { name: "Dom/Feriado", horas: parseFloat((byDayType.sunday_holiday / 60).toFixed(2)), fill: "var(--color-chart-3)" },
-  ].filter((d) => d.horas > 0);
+  const MODALIDADE_COLORS: Record<string, string> = {
+    "Especial": "#f59e0b",
+    "Extraordinário": "#3b82f6",
+  };
+  const DEFAULT_COLORS = ["#10b981", "#6366f1", "#ef4444", "#8b5cf6"];
+
+  const chartData = Object.entries(byModalidade)
+    .map(([name, minutes], i) => ({
+      name,
+      horas: parseFloat((minutes / 60).toFixed(2)),
+      fill: MODALIDADE_COLORS[name] ?? DEFAULT_COLORS[i % DEFAULT_COLORS.length],
+    }))
+    .filter((d) => d.horas > 0)
+    .sort((a, b) => b.horas - a.horas);
 
   return (
     <div className="p-6 lg:p-8 max-w-7xl mx-auto">
@@ -378,23 +387,23 @@ export default function Reports() {
         {chartData.length > 0 && (
           <Card className="shadow-sm border-border/60">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-semibold">Horas por Tipo de Dia</CardTitle>
-              <CardDescription className="text-xs">Distribuição no período selecionado</CardDescription>
+              <CardTitle className="text-sm font-semibold">Horas por Tipo de Serviço</CardTitle>
+              <CardDescription className="text-xs">Especial vs. Extraordinário no período</CardDescription>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={200}>
                 <BarChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
-                  <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                  <YAxis tick={{ fontSize: 11 }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#64748b" }} />
+                  <YAxis tick={{ fontSize: 11, fill: "#64748b" }} />
                   <Tooltip
                     formatter={(v) => [`${v}h`, "Horas"]}
                     contentStyle={{
                       fontSize: 12,
                       borderRadius: 8,
-                      border: "1px solid var(--color-border)",
-                      background: "var(--color-card)",
-                      color: "var(--color-card-foreground)",
+                      border: "1px solid #e2e8f0",
+                      background: "#ffffff",
+                      color: "#0f172a",
                     }}
                   />
                   <Bar dataKey="horas" radius={[4, 4, 0, 0]}>
