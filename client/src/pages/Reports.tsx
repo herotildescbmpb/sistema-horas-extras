@@ -96,6 +96,17 @@ export default function Reports() {
     { enabled: false }
   );
 
+  const { refetch: fetchCsvDal } = trpc.reports.exportCsvDal.useQuery(
+    {
+      startDate,
+      endDate,
+      userId: isAdmin && selectedUserId !== "all" ? parseInt(selectedUserId) : undefined,
+    },
+    { enabled: false }
+  );
+
+  const [exportingDal, setExportingDal] = useState(false);
+
   const handleExport = async () => {
     setExporting(true);
     try {
@@ -116,6 +127,30 @@ export default function Reports() {
       toast.error("Erro ao exportar relatório");
     } finally {
       setExporting(false);
+    }
+  };
+
+  const handleExportDal = async () => {
+    setExportingDal(true);
+    try {
+      const result = await fetchCsvDal();
+      if (!result.data?.csv) {
+        toast.error("Nenhum dado para exportar");
+        return;
+      }
+      // Sem BOM — o modelo DAL usa UTF-8 puro com separador ;
+      const blob = new Blob([result.data.csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `escalas_dal_${startDate}_${endDate}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success(`${result.data.count} registros exportados no formato DAL`);
+    } catch {
+      toast.error("Erro ao exportar relatório DAL");
+    } finally {
+      setExportingDal(false);
     }
   };
 
@@ -152,18 +187,33 @@ export default function Reports() {
             </p>
           </div>
         </div>
-        <Button
-          onClick={handleExport}
-          disabled={exporting || !records?.length}
-          className="gap-2 shadow-sm h-10"
-        >
-          {exporting ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <Download className="w-4 h-4" />
-          )}
-          Exportar CSV
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            onClick={handleExportDal}
+            disabled={exportingDal || !records?.length}
+            variant="outline"
+            className="gap-2 shadow-sm h-10"
+          >
+            {exportingDal ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <FileText className="w-4 h-4" />
+            )}
+            Exportar CSV (DAL)
+          </Button>
+          <Button
+            onClick={handleExport}
+            disabled={exporting || !records?.length}
+            className="gap-2 shadow-sm h-10"
+          >
+            {exporting ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Download className="w-4 h-4" />
+            )}
+            Exportar CSV
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}

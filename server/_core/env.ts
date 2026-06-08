@@ -7,4 +7,8 @@ export const ENV = {
   isProduction: process.env.NODE_ENV === "production",
   forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
   forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
+
+  // ─── Resend (e-mail transacional) ────────────────────────────────────────
+  resendApiKey: process.env.RESEND_API_KEY ?? "",
+  resendFrom: process.env.RESEND_FROM ?? process.env.EMAIL_FROM ?? "noreply@dalgest.sbs",
 };

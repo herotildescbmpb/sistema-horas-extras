@@ -59,7 +59,7 @@ import {
   validatePasswordResetToken,
   consumePasswordResetToken,
 } from "./db";
-import { sendPasswordResetEmail } from "./_core/email";
+import { sendPasswordResetEmail, sendWelcomeEmail } from "./_core/email";
 
 // ─── Admin guard ──────────────────────────────────────────────────────────────
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -311,6 +311,17 @@ export const appRouter = router({
           role: input.role,
           matricula: input.matricula || undefined,
         });
+
+        // ── Enviar e-mail de boas-vindas com credenciais ────────────────────────────────
+        if (input.email) {
+          await sendWelcomeEmail({
+            to: input.email,
+            name: input.name,
+            department: input.department || null,
+            position: input.position || null,
+          });
+        }
+
         return { success: true };
       }),
 
@@ -550,6 +561,57 @@ export const appRouter = router({
           const userName = rec.userName ?? "";
           return `${rec.tipoEscala ?? ""};${servidor};${dateFmt};${startFmt};${endDateFmt};${endFmt};${funcao};${rec.modalidade ?? ""};${st};${hours};${r.multiplier}x;${r.project ?? ""};${r.department ?? ""};${motivo};${userName}`;
         });
+
+        return { csv: [header, ...rows].join("\n"), count: records.length };
+      }),
+
+    /**
+     * Exporta CSV no formato padrão DAL/CBMPB:
+     * Tipo de Escala;Servidor;Data Início;Hora Início:;Data Final;Hora Fim:;Função;Modalidade;
+     */
+    exportCsvDal: protectedProcedure
+      .input(
+        z.object({
+          startDate: z.string(),
+          endDate: z.string(),
+          userId: z.number().optional(),
+        })
+      )
+      .query(async ({ ctx, input }) => {
+        const isAdmin = ctx.user.role === "admin";
+        const isChefe = ctx.user.role === "chefe";
+        let records;
+
+        if (isAdmin && input.userId) {
+          records = await getAllOvertimeRecords({ startDate: input.startDate, endDate: input.endDate, userId: input.userId });
+        } else if (isAdmin) {
+          records = await getAllOvertimeRecords({ startDate: input.startDate, endDate: input.endDate });
+        } else if (isChefe) {
+          const dept = await getDepartmentByChefe(ctx.user.id);
+          if (!dept) throw new TRPCError({ code: "FORBIDDEN", message: "Você não é chefe de nenhum setor." });
+          records = await getOvertimeRecordsByDepartment(dept.name, { startDate: input.startDate, endDate: input.endDate });
+        } else {
+          records = await getOvertimeRecordsByUser(ctx.user.id, { startDate: input.startDate, endDate: input.endDate });
+        }
+
+        // Cabeçalho exatamente igual ao modelo
+        const header = "Tipo de Escala;Servidor;Data Início;Hora Início:;Data Final;Hora Fim:;Função;Modalidade;";
+
+        const rows = records.map((r) => {
+          const rec = r as any;
+          const tipoEscala = rec.tipoEscala ?? "";
+          const servidor = rec.servidor ?? rec.userMatricula ?? "";
+          const dataInicio = r.date.split("-").reverse().join("/");
+          const horaInicio = r.startTime.length === 5 ? r.startTime + ":00" : r.startTime;
+          const dataFinal = (rec.endDate ?? r.date).split("-").reverse().join("/");
+          const horaFim = r.endTime.length === 5 ? r.endTime + ":00" : r.endTime;
+          const funcao = rec.funcao ?? "";
+          const modalidade = rec.modalidade ?? "";
+          return `${tipoEscala};${servidor};${dataInicio};${horaInicio};${dataFinal};${horaFim};${funcao};${modalidade};`;
+        });
+
+        // Preencher linhas vazias até 100 (igual ao modelo)
+        while (rows.length < 100) rows.push(";;;;;;;;");
 
         return { csv: [header, ...rows].join("\n"), count: records.length };
       }),

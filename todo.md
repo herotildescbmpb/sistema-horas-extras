@@ -199,3 +199,10 @@
 - [x] Corrigir useQueryParam para usar window.location.search (wouter não expõe query string)
 - [x] Testar fluxo completo de ponta a ponta (token gerado → redefinição → sucesso)
 - [ ] Verificar domínio dalgest.sbs no painel Resend para habilitar envio real de e-mails
+
+## Exportação CSV — Relatórios (v17)
+
+- [x] Endpoint backend reports.exportCsvDal: exportar registros no formato exato do modelo DAL (separador ;, 8 colunas, 100 linhas com padding de linhas vazias)
+- [x] Botão "Exportar CSV (DAL)" adicionado na tela de Relatórios ao lado do botão existente
+- [x] Botão desabilitado quando não há registros no período selecionado
+- [x] Nome do arquivo gerado: escalas_dal_{startDate}_{endDate}.csv

@@ -1,0 +1,8 @@
+{
+  "query": "\nSELECT u.name, u.email, u.role, d.name as department\nFROM users u\nLEFT JOIN departments d ON u.departmentId = d.id\nWHERE u.email IS NOT NULL AND u.email != ''\nORDER BY u.role, u.name;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4XMYXLTg6g9ZctA.83aa4a08e73e --database cDx3jwjHrzRKbmDZmbrJYX --execute \nSELECT u.name, u.email, u.role, d.name as department\nFROM users u\nLEFT JOIN departments d ON u.departmentId = d.id\nWHERE u.email IS NOT NULL AND u.email != ''\nORDER BY u.role, u.name;\n",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 2: Unknown column 'u.departmentid' in 'on clause'"
+  ]
+}
