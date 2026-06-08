@@ -1,6 +1,7 @@
 import { trpc } from "@/lib/trpc";
 import { useState } from "react";
 import { Link } from "wouter";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -46,6 +47,7 @@ function formatMinutes(minutes: number) {
 
 export default function OvertimeList() {
   const utils = trpc.useUtils();
+  const { user } = useAuth();
   const now = new Date();
   const [startDate, setStartDate] = useState(
     `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`
@@ -90,9 +92,20 @@ export default function OvertimeList() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Minhas Horas Extras</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            {records?.length ?? 0} registro{records?.length !== 1 ? "s" : ""} encontrado{records?.length !== 1 ? "s" : ""}
-          </p>
+          {(user as any)?.matricula && (user as any).matricula.trim() !== "" ? (
+            <p className="text-sm text-muted-foreground mt-0.5">
+              <span className="font-medium text-foreground/70">
+                Matr. {(user as any).matricula}
+                {(user as any).name ? ` — ${(user as any).name}` : ""}
+              </span>
+              <span className="text-muted-foreground"> · </span>
+              {records?.length ?? 0} registro{records?.length !== 1 ? "s" : ""} encontrado{records?.length !== 1 ? "s" : ""}
+            </p>
+          ) : (
+            <p className="text-sm text-muted-foreground mt-0.5">
+              {records?.length ?? 0} registro{records?.length !== 1 ? "s" : ""} encontrado{records?.length !== 1 ? "s" : ""}
+            </p>
+          )}
         </div>
         <Button asChild className="gap-2 shadow-sm h-10">
           <Link href="/novo">
@@ -217,6 +230,11 @@ export default function OvertimeList() {
 
                   {/* Info */}
                   <div className="flex-1 min-w-0">
+                    {(record as any).nomeServidor && (
+                      <p className="text-xs font-semibold text-foreground/80 mb-0.5">
+                        {(record as any).nomeServidor}
+                      </p>
+                    )}
                     <div className="flex items-center gap-2 flex-wrap mb-1">
                       {(record as any).tipoEscala && (
                         <span className="text-xs font-bold text-foreground">{(record as any).tipoEscala}</span>

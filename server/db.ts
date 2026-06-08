@@ -245,12 +245,17 @@ export async function createOvertimeRecord(data: InsertOvertimeRecord) {
 
 export async function getOvertimeRecordsByUser(
   userId: number,
-  filters?: { startDate?: string; endDate?: string; status?: string }
+  filters?: { startDate?: string; endDate?: string; status?: string; matricula?: string }
 ) {
   const db = await getDb();
   if (!db) return [];
 
-  const conditions = [eq(overtimeRecords.userId, userId)];
+  // Se matrícula fornecida, filtra por servidor beneficiário (ignora userId)
+  // Caso contrário, filtra pelos registros cadastrados pelo userId
+  const conditions = filters?.matricula
+    ? [sql`SUBSTRING_INDEX(${overtimeRecords.servidor}, '-', 1) = ${filters.matricula}`]
+    : [eq(overtimeRecords.userId, userId)];
+
   if (filters?.startDate) conditions.push(gte(overtimeRecords.date, filters.startDate));
   if (filters?.endDate) conditions.push(lte(overtimeRecords.date, filters.endDate));
   if (filters?.status) {

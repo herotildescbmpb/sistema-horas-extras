@@ -235,3 +235,10 @@
 
 - [x] getOvertimeRecordsByUser: adicionar LEFT JOIN com tabela servidores (SUBSTRING_INDEX) para retornar nomeServidor
 - [x] Dashboard.tsx: exibir nomeServidor (ou fallback para servidor/matrícula) nos Registros Recentes
+
+## Minhas Horas — Filtro por Servidor Beneficiário (v22)
+
+- [x] getOvertimeRecordsByUser: adicionar filtro opcional por matrícula do servidor (campo `servidor`)
+- [x] overtime.list: quando usuário tem matrícula cadastrada, filtrar por `servidor = matricula` do usuário logado
+- [x] OvertimeList.tsx: exibir nome do servidor (nomeServidor) em cada registro
+- [x] Exibir matrícula do usuário logado no cabeçalho da tela para referência

@@ -358,13 +358,18 @@ export const appRouter = router({
           status: z.string().optional(),
         })
       )
-      .query(({ ctx, input }) =>
-        getOvertimeRecordsByUser(ctx.user.id, {
+      .query(({ ctx, input }) => {
+        // Se o usuário tem matrícula cadastrada (não nula e não vazia), filtra pelos registros
+        // onde ele é o servidor beneficiário. Caso contrário, filtra pelos registros que ele cadastrou.
+        const rawMatricula = ctx.user.matricula;
+        const matricula = rawMatricula && rawMatricula.trim() !== "" ? rawMatricula.trim() : undefined;
+        return getOvertimeRecordsByUser(ctx.user.id, {
           startDate: input.startDate,
           endDate: input.endDate,
           status: input.status,
-        })
-      ),
+          matricula,
+        });
+      }),
 
     listAll: adminProcedure
       .input(

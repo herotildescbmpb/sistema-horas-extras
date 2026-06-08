@@ -1,0 +1,66 @@
+{
+  "query": "SELECT id, userId, servidor, date, status FROM overtime_records ORDER BY date DESC LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4XMYXLTg6g9ZctA.83aa4a08e73e --database cDx3jwjHrzRKbmDZmbrJYX --execute SELECT id, userId, servidor, date, status FROM overtime_records ORDER BY date DESC LIMIT 10;",
+  "rows": [
+    {
+      "id": "120008",
+      "userId": "1",
+      "servidor": "517066-4",
+      "date": "2026-06-12",
+      "status": "approved"
+    },
+    {
+      "id": "120007",
+      "userId": "1",
+      "servidor": "517066-4",
+      "date": "2026-06-11",
+      "status": "approved"
+    },
+    {
+      "id": "120006",
+      "userId": "1",
+      "servidor": "517066-4",
+      "date": "2026-06-10",
+      "status": "approved"
+    },
+    {
+      "id": "120005",
+      "userId": "1",
+      "servidor": "517066-4",
+      "date": "2026-06-09",
+      "status": "approved"
+    },
+    {
+      "id": "120004",
+      "userId": "1",
+      "servidor": "517066-4",
+      "date": "2026-06-08",
+      "status": "approved"
+    },
+    {
+      "id": "120003",
+      "userId": "1",
+      "servidor": "517066-4",
+      "date": "2026-06-03",
+      "status": "approved"
+    },
+    {
+      "id": "120002",
+      "userId": "1",
+      "servidor": "517066-4",
+      "date": "2026-06-02",
+      "status": "approved"
+    },
+    {
+      "id": "120001",
+      "userId": "1",
+      "servidor": "517066-4",
+      "date": "2026-06-01",
+      "status": "approved"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tuserId\tservidor\tdate\tstatus\n120008\t1\t517066-4\t2026-06-12\tapproved\n120007\t1\t517066-4\t2026-06-11\tapproved\n120006\t1\t517066-4\t2026-06-10\tapproved\n120005\t1\t517066-4\t2026-06-09\tapproved\n120004\t1\t517066-4\t2026-06-08\tapproved\n120003\t1\t517066-4\t2026-06-03\tapproved\n120002\t1\t517066-4\t2026-06-02\tapproved\n120001\t1\t517066-4\t2026-06-01\tapproved\n",
+  "stderr": "",
+  "execution_time_ms": 264
+}
