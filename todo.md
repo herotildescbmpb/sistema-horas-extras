@@ -230,3 +230,8 @@
 - [x] getAllOvertimeRecords aceita filtro por servidor (matrícula)
 - [x] overtime.listAll aceita filtro servidor no input schema
 - [x] exportCsvDal aceita filtro servidor no input schema
+
+## Dashboard — Nome do Servidor nos Registros Recentes (v21)
+
+- [x] getOvertimeRecordsByUser: adicionar LEFT JOIN com tabela servidores (SUBSTRING_INDEX) para retornar nomeServidor
+- [x] Dashboard.tsx: exibir nomeServidor (ou fallback para servidor/matrícula) nos Registros Recentes

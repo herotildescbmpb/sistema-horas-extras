@@ -260,8 +260,33 @@ export async function getOvertimeRecordsByUser(
   }
 
   return db
-    .select()
+    .select({
+      id: overtimeRecords.id,
+      userId: overtimeRecords.userId,
+      tipoEscala: overtimeRecords.tipoEscala,
+      servidor: overtimeRecords.servidor,
+      date: overtimeRecords.date,
+      endDate: overtimeRecords.endDate,
+      startTime: overtimeRecords.startTime,
+      endTime: overtimeRecords.endTime,
+      funcao: overtimeRecords.funcao,
+      modalidade: overtimeRecords.modalidade,
+      totalMinutes: overtimeRecords.totalMinutes,
+      dayType: overtimeRecords.dayType,
+      multiplier: overtimeRecords.multiplier,
+      reason: overtimeRecords.reason,
+      project: overtimeRecords.project,
+      department: overtimeRecords.department,
+      status: overtimeRecords.status,
+      reviewedBy: overtimeRecords.reviewedBy,
+      reviewedAt: overtimeRecords.reviewedAt,
+      reviewNote: overtimeRecords.reviewNote,
+      createdAt: overtimeRecords.createdAt,
+      updatedAt: overtimeRecords.updatedAt,
+      nomeServidor: servidores.nome,
+    })
     .from(overtimeRecords)
+    .leftJoin(servidores, sql`SUBSTRING_INDEX(${overtimeRecords.servidor}, '-', 1) = ${servidores.matricula}`)
     .where(and(...conditions))
     .orderBy(desc(overtimeRecords.date));
 }

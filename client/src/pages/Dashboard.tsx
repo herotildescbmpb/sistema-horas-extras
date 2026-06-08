@@ -201,6 +201,11 @@ export default function Dashboard() {
                           </span>
                           <DayTypeBadge type={record.dayType} />
                         </div>
+                        {(record.nomeServidor || record.servidor) && (
+                          <p className="text-xs font-medium text-foreground/70 mt-0.5">
+                            {record.nomeServidor || record.servidor}
+                          </p>
+                        )}
                         <p className="text-xs text-muted-foreground mt-0.5">
                           {record.startTime} – {record.endTime} · {formatMinutes(record.totalMinutes)}
                           {record.project && ` · ${record.project}`}
