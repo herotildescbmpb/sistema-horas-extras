@@ -254,3 +254,31 @@
 - [x] Frontend: seletor de período (mês/ano) no Dashboard para admin
 - [x] Frontend: cards de resumo atualizados (total, aprovadas, pendentes, rejeitadas)
 - [x] Frontend: registros recentes mantidos com nome do servidor
+
+## Agente Bravo Escalas — Automação de Lançamento
+
+- [ ] Mapear IDs dos selects do formulário addServico (tipo de escala, função, mobilidade)
+- [ ] Criar tabela `bravo_lancamentos` no banco para controle de duplicatas
+- [ ] Criar tabela `bravo_escalas_mes` para registrar a escala criada por mês
+- [ ] Endpoint `bravo.getStatus`: retornar status dos lançamentos do mês atual
+- [ ] Endpoint `bravo.triggerSync`: disparar sincronização manual
+- [ ] Script Playwright: login no Bravo Escalas
+- [ ] Script Playwright: criar nova escala no primeiro dia do mês (EXTRA EXPEDIENTE, homologador 521291)
+- [ ] Script Playwright: lançar cada registro aprovado do CSV DAL na escala do mês
+- [ ] Script Playwright: verificar duplicatas antes de lançar
+- [ ] Script Playwright: gerar relatório de erros e sucessos
+- [ ] Tela BravoSync.tsx: painel de controle com status, botão de sync manual, log de lançamentos
+- [ ] Agendamento diário às 00:01 via heartbeat
+- [ ] Notificação ao owner em caso de falha no lançamento
+
+## Agente Bravo Escalas — Automação (v26)
+
+- [x] Tabelas `bravo_escalas_mes`, `bravo_lancamentos`, `bravo_sync_logs` criadas no banco
+- [x] Script `server/bravo-agent.ts` com Playwright: login, criar escala mensal, lançar serviços, controle de duplicatas
+- [x] Endpoint tRPC `bravo.status`, `bravo.triggerSync`, `bravo.logs`, `bravo.lancamentos`
+- [x] Endpoint Express `/api/scheduled/bravo-sync` para heartbeat agendado
+- [x] Tela `BravoSync.tsx` com painel de controle, histórico de execuções e lançamentos por mês
+- [x] Link "Bravo Sync" na sidebar (admin only)
+- [x] Credenciais BRAVO_EMAIL, BRAVO_PASSWORD, BRAVO_HOMOLOGADOR_ID configuradas
+- [ ] Deploy do site (necessário para ativar o agendamento automático)
+- [ ] Criar heartbeat cron via CLI após o deploy

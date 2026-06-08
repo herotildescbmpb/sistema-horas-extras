@@ -171,3 +171,54 @@ export const rolePermissions = mysqlTable("role_permissions", {
 
 export type RolePermission = typeof rolePermissions.$inferSelect;
 export type InsertRolePermission = typeof rolePermissions.$inferInsert;
+
+// Controle de escalas criadas no Bravo por mês
+export const bravoEscalasMes = mysqlTable("bravo_escalas_mes", {
+  id: int("id").autoincrement().primaryKey(),
+  mesAno: varchar("mesAno", { length: 7 }).notNull().unique(), // "YYYY-MM"
+  bravoEscalaId: int("bravoEscalaId"), // ID da escala no Bravo (ex: 117320)
+  bravoEscalaNome: varchar("bravoEscalaNome", { length: 128 }), // ex: "EXTRA EXPEDIENTE"
+  status: mysqlEnum("status", ["pending", "created", "error"]).default("pending").notNull(),
+  errorMsg: text("errorMsg"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type BravoEscalaMes = typeof bravoEscalasMes.$inferSelect;
+export type InsertBravoEscalaMes = typeof bravoEscalasMes.$inferInsert;
+
+// Controle de lançamentos individuais no Bravo (evita duplicatas)
+export const bravoLancamentos = mysqlTable("bravo_lancamentos", {
+  id: int("id").autoincrement().primaryKey(),
+  overtimeRecordId: int("overtimeRecordId").notNull(), // FK para overtime_records
+  bravoEscalaMesId: int("bravoEscalaMesId").notNull(), // FK para bravo_escalas_mes
+  bravoServicoId: int("bravoServicoId"), // ID do serviço no Bravo após lançamento
+  matricula: varchar("matricula", { length: 16 }).notNull(),
+  data: varchar("data", { length: 10 }).notNull(), // YYYY-MM-DD
+  horaInicio: varchar("horaInicio", { length: 8 }).notNull(),
+  horaFim: varchar("horaFim", { length: 8 }).notNull(),
+  status: mysqlEnum("status", ["pending", "success", "error", "duplicate"]).default("pending").notNull(),
+  errorMsg: text("errorMsg"),
+  tentativas: int("tentativas").default(0).notNull(),
+  lancadoEm: timestamp("lancadoEm"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type BravoLancamento = typeof bravoLancamentos.$inferSelect;
+export type InsertBravoLancamento = typeof bravoLancamentos.$inferInsert;
+
+// Log de execuções do agente Bravo
+export const bravoSyncLogs = mysqlTable("bravo_sync_logs", {
+  id: int("id").autoincrement().primaryKey(),
+  mesAno: varchar("mesAno", { length: 7 }).notNull(),
+  triggeredBy: mysqlEnum("triggeredBy", ["schedule", "manual"]).default("schedule").notNull(),
+  totalRegistros: int("totalRegistros").default(0).notNull(),
+  sucessos: int("sucessos").default(0).notNull(),
+  erros: int("erros").default(0).notNull(),
+  duplicatas: int("duplicatas").default(0).notNull(),
+  status: mysqlEnum("status", ["running", "completed", "failed"]).default("running").notNull(),
+  errorMsg: text("errorMsg"),
+  startedAt: timestamp("startedAt").defaultNow().notNull(),
+  finishedAt: timestamp("finishedAt"),
+});
+export type BravoSyncLog = typeof bravoSyncLogs.$inferSelect;
+export type InsertBravoSyncLog = typeof bravoSyncLogs.$inferInsert;

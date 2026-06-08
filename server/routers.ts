@@ -1,4 +1,12 @@
 import { TRPCError } from "@trpc/server";
+import { runBravoAgent } from "./bravo-agent";
+import { getDb } from "./db";
+import {
+  bravoEscalasMes,
+  bravoLancamentos,
+  bravoSyncLogs,
+} from "../drizzle/schema";
+import { eq, desc, sql as drizzleSql } from "drizzle-orm";
 import { z } from "zod";
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
@@ -895,6 +903,80 @@ export const appRouter = router({
       .mutation(async ({ input }) => {
         await setRolePermission(input.role as RoleType, input.permissionKey, input.enabled);
         return { success: true };
+      }),
+  }),
+  // ─── Bravo Escalas ──────────────────────────────────────────────────────────
+  bravo: router({
+    // Status do mês atual
+    status: adminProcedure.query(async () => {
+      const db = await getDb();
+      if (!db) return { escalaMes: null, lancamentos: [], logs: [] };
+      const mesAno = new Date().toISOString().slice(0, 7); // YYYY-MM
+      const escalaMes = await db
+        .select()
+        .from(bravoEscalasMes)
+        .where(eq(bravoEscalasMes.mesAno, mesAno))
+        .limit(1);
+      const lancamentos = escalaMes[0]
+        ? await db
+            .select()
+            .from(bravoLancamentos)
+            .where(eq(bravoLancamentos.bravoEscalaMesId, escalaMes[0].id))
+            .orderBy(desc(bravoLancamentos.createdAt))
+        : [];
+      const logs = await db
+        .select()
+        .from(bravoSyncLogs)
+        .orderBy(desc(bravoSyncLogs.startedAt))
+        .limit(20);
+      return {
+        escalaMes: escalaMes[0] || null,
+        lancamentos,
+        logs,
+      };
+    }),
+
+    // Disparar sincronização manual
+    triggerSync: adminProcedure.mutation(async () => {
+      // Executa em background para não bloquear a resposta HTTP
+      setImmediate(() => {
+        runBravoAgent("manual").catch((e) =>
+          console.error("[BravoAgent] Erro na execução manual:", e)
+        );
+      });
+      return { success: true, message: "Sincronização iniciada em segundo plano." };
+    }),
+
+    // Histórico de logs
+    logs: adminProcedure
+      .input(z.object({ limit: z.number().default(50) }))
+      .query(async ({ input }) => {
+        const db = await getDb();
+        if (!db) return [];
+        return db
+          .select()
+          .from(bravoSyncLogs)
+          .orderBy(desc(bravoSyncLogs.startedAt))
+          .limit(input.limit);
+      }),
+
+    // Detalhes de lançamentos de um mês específico
+    lancamentos: adminProcedure
+      .input(z.object({ mesAno: z.string() }))
+      .query(async ({ input }) => {
+        const db = await getDb();
+        if (!db) return [];
+        const escalaMes = await db
+          .select()
+          .from(bravoEscalasMes)
+          .where(eq(bravoEscalasMes.mesAno, input.mesAno))
+          .limit(1);
+        if (!escalaMes[0]) return [];
+        return db
+          .select()
+          .from(bravoLancamentos)
+          .where(eq(bravoLancamentos.bravoEscalaMesId, escalaMes[0].id))
+          .orderBy(desc(bravoLancamentos.createdAt));
       }),
   }),
 });

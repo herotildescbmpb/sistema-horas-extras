@@ -16,6 +16,7 @@ import {
   Shield,
   Users,
   X,
+  Zap,
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { Link, useLocation } from "wouter";
@@ -54,6 +55,7 @@ const ALL_NAV_ITEMS: NavItem[] = [
   { label: "Setores",      href: "/admin/setores",  icon: Building2,       adminOnly: true },
   { label: "Permissões",   href: "/admin/permissoes", icon: Settings,      adminOnly: true },
   { label: "Guia do Usuário", href: "/guia",           icon: BookOpen },
+  { label: "Bravo Sync",     href: "/bravo",          icon: Zap,             adminOnly: true, badge: "AUTO" },
 ];
 
 interface AppLayoutProps {

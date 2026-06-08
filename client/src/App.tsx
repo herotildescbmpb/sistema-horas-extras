@@ -20,6 +20,7 @@ import NovoRegistro from "./pages/NovoRegistro";
 import MeuSetor from "./pages/MeuSetor";
 import AdminPermissions from "./pages/AdminPermissions";
 import UserGuide from "./pages/UserGuide";
+import BravoSync from "./pages/BravoSync";
 import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
@@ -43,6 +44,7 @@ function ProtectedRouter() {
         <Route path="/escalas/:id" component={EscalaDetail} />
         <Route path="/meu-setor" component={MeuSetor} />
         <Route path="/guia" component={UserGuide} />
+        <Route path="/bravo" component={BravoSync} />
         <Route path="/perfil" component={Profile} />
         <Route path="/404" component={NotFound} />
         <Route component={NotFound} />

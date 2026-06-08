@@ -78,6 +78,13 @@
       "when": 1780521856217,
       "tag": "0010_woozy_post",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "5",
+      "when": 1780961627904,
+      "tag": "0011_foamy_scarlet_witch",
+      "breakpoints": true
     }
   ]
 }
