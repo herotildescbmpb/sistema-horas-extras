@@ -1028,3 +1028,114 @@ export async function getServidoresUnicos(filters?: {
 
   return rows.filter((r) => r.matricula != null) as Array<{ matricula: string; nome: string | null }>;
 }
+
+// ─── Dashboard Analítico ──────────────────────────────────────────────────────
+
+/**
+ * Retorna horas totais por servidor (top 20) para um período.
+ */
+export async function getHorasPorServidor(filters: {
+  startDate: string;
+  endDate: string;
+  department?: string;
+}): Promise<Array<{ matricula: string; nome: string | null; totalMinutes: number }>> {
+  const db = await getDb();
+  if (!db) return [];
+
+  const conditions: any[] = [
+    gte(overtimeRecords.date, filters.startDate),
+    lte(overtimeRecords.date, filters.endDate),
+    sql`${overtimeRecords.servidor} IS NOT NULL AND ${overtimeRecords.servidor} != ''`,
+  ];
+  if (filters.department) conditions.push(eq(users.department, filters.department));
+
+  const rows = await db
+    .select({
+      matricula: sql<string>`SUBSTRING_INDEX(${overtimeRecords.servidor}, '-', 1)`,
+      nome: servidores.nome,
+      totalMinutes: sql<number>`SUM(${overtimeRecords.totalMinutes})`,
+    })
+    .from(overtimeRecords)
+    .leftJoin(servidores, sql`SUBSTRING_INDEX(${overtimeRecords.servidor}, '-', 1) = ${servidores.matricula}`)
+    .leftJoin(users, eq(overtimeRecords.userId, users.id))
+    .where(and(...conditions))
+    .groupBy(sql`SUBSTRING_INDEX(${overtimeRecords.servidor}, '-', 1)`, servidores.nome)
+    .orderBy(sql`SUM(${overtimeRecords.totalMinutes}) DESC`)
+    .limit(20);
+
+  return rows.map((r) => ({
+    matricula: r.matricula ?? "",
+    nome: r.nome ?? null,
+    totalMinutes: Number(r.totalMinutes) || 0,
+  }));
+}
+
+/**
+ * Retorna horas totais por setor para um período.
+ */
+export async function getHorasPorSetor(filters: {
+  startDate: string;
+  endDate: string;
+}): Promise<Array<{ setor: string; totalMinutes: number }>> {
+  const db = await getDb();
+  if (!db) return [];
+
+  const rows = await db
+    .select({
+      setor: overtimeRecords.department,
+      totalMinutes: sql<number>`SUM(${overtimeRecords.totalMinutes})`,
+    })
+    .from(overtimeRecords)
+    .where(
+      and(
+        gte(overtimeRecords.date, filters.startDate),
+        lte(overtimeRecords.date, filters.endDate),
+        sql`${overtimeRecords.department} IS NOT NULL AND ${overtimeRecords.department} != ''`
+      )
+    )
+    .groupBy(overtimeRecords.department)
+    .orderBy(sql`SUM(${overtimeRecords.totalMinutes}) DESC`);
+
+  return rows.map((r) => ({
+    setor: r.setor ?? "Sem setor",
+    totalMinutes: Number(r.totalMinutes) || 0,
+  }));
+}
+
+/**
+ * Retorna evolução mensal de horas (últimos N meses).
+ */
+export async function getEvolucaoMensal(
+  months: number = 6
+): Promise<Array<{ mes: string; totalMinutes: number; approvedMinutes: number }>> {
+  const db = await getDb();
+  if (!db) return [];
+
+  const result: Array<{ mes: string; totalMinutes: number; approvedMinutes: number }> = [];
+  const now = new Date();
+
+  for (let i = months - 1; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const year = d.getFullYear();
+    const month = d.getMonth() + 1;
+    const startDate = `${year}-${String(month).padStart(2, "0")}-01`;
+    const endDate = `${year}-${String(month).padStart(2, "0")}-31`;
+
+    const rows = await db
+      .select({
+        totalMinutes: sql<number>`SUM(${overtimeRecords.totalMinutes})`,
+        approvedMinutes: sql<number>`SUM(CASE WHEN ${overtimeRecords.status} = 'approved' THEN ${overtimeRecords.totalMinutes} ELSE 0 END)`,
+      })
+      .from(overtimeRecords)
+      .where(and(gte(overtimeRecords.date, startDate), lte(overtimeRecords.date, endDate)));
+
+    const mesLabel = d.toLocaleDateString("pt-BR", { month: "short", year: "2-digit" });
+    result.push({
+      mes: mesLabel.charAt(0).toUpperCase() + mesLabel.slice(1),
+      totalMinutes: Number(rows[0]?.totalMinutes) || 0,
+      approvedMinutes: Number(rows[0]?.approvedMinutes) || 0,
+    });
+  }
+
+  return result;
+}

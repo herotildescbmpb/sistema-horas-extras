@@ -242,3 +242,15 @@
 - [x] overtime.list: quando usuário tem matrícula cadastrada, filtrar por `servidor = matricula` do usuário logado
 - [x] OvertimeList.tsx: exibir nome do servidor (nomeServidor) em cada registro
 - [x] Exibir matrícula do usuário logado no cabeçalho da tela para referência
+
+## Dashboard Analítico — Visualizações (v23)
+
+- [x] Backend: endpoint reports.dashboardStats retorna horas por servidor (top 10), horas por setor, evolução mensal (últimos 6 meses), total geral
+- [x] Backend: endpoint reports.dashboardStats aceita filtro de período (mês/ano) para admin
+- [x] Frontend: instalar recharts (já instalado) e criar seção de gráficos no Dashboard
+- [x] Frontend: gráfico de barras — horas por servidor (top 10 do período)
+- [x] Frontend: gráfico de barras — horas por setor (comparativo)
+- [x] Frontend: gráfico de linha — evolução mensal de horas (últimos 6 meses)
+- [x] Frontend: seletor de período (mês/ano) no Dashboard para admin
+- [x] Frontend: cards de resumo atualizados (total, aprovadas, pendentes, rejeitadas)
+- [x] Frontend: registros recentes mantidos com nome do servidor

@@ -59,6 +59,9 @@ import {
   validatePasswordResetToken,
   consumePasswordResetToken,
   getServidoresUnicos,
+  getHorasPorServidor,
+  getHorasPorSetor,
+  getEvolucaoMensal,
 } from "./db";
 import { sendPasswordResetEmail, sendWelcomeEmail } from "./_core/email";
 
@@ -552,6 +555,26 @@ export const appRouter = router({
     adminMonthSummary: adminProcedure
       .input(z.object({ year: z.number(), month: z.number() }))
       .query(({ input }) => getAdminMonthSummary(input.year, input.month)),
+
+    /**
+     * Dados analíticos para o Dashboard: horas por servidor, por setor e evolução mensal.
+     */
+    dashboardStats: adminProcedure
+      .input(
+        z.object({
+          startDate: z.string(),
+          endDate: z.string(),
+          department: z.string().optional(),
+        })
+      )
+      .query(async ({ input }) => {
+        const [porServidor, porSetor, evolucao] = await Promise.all([
+          getHorasPorServidor({ startDate: input.startDate, endDate: input.endDate, department: input.department }),
+          getHorasPorSetor({ startDate: input.startDate, endDate: input.endDate }),
+          getEvolucaoMensal(6),
+        ]);
+        return { porServidor, porSetor, evolucao };
+      }),
 
     exportCsv: protectedProcedure
       .input(
