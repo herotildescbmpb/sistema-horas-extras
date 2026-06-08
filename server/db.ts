@@ -321,7 +321,7 @@ export async function getAllOvertimeRecords(filters?: {
     })
     .from(overtimeRecords)
     .leftJoin(users, eq(overtimeRecords.userId, users.id))
-    .leftJoin(servidores, eq(overtimeRecords.servidor, servidores.matricula))
+    .leftJoin(servidores, sql`SUBSTRING_INDEX(${overtimeRecords.servidor}, '-', 1) = ${servidores.matricula}`)
     .where(conditions.length > 0 ? and(...conditions) : undefined)
     .orderBy(desc(overtimeRecords.date));
 
@@ -690,7 +690,7 @@ export async function getOvertimeRecordsByDepartment(
     })
     .from(overtimeRecords)
     .innerJoin(users, eq(overtimeRecords.userId, users.id))
-    .leftJoin(servidores, eq(overtimeRecords.servidor, servidores.matricula))
+    .leftJoin(servidores, sql`SUBSTRING_INDEX(${overtimeRecords.servidor}, '-', 1) = ${servidores.matricula}`)
     .where(and(...(conditions as any[])))
     .orderBy(desc(overtimeRecords.date));
 }
@@ -986,7 +986,7 @@ export async function getServidoresUnicos(filters?: {
       nome: servidores.nome,
     })
     .from(overtimeRecords)
-    .leftJoin(servidores, eq(overtimeRecords.servidor, servidores.matricula))
+    .leftJoin(servidores, sql`SUBSTRING_INDEX(${overtimeRecords.servidor}, '-', 1) = ${servidores.matricula}`)
     .leftJoin(users, eq(overtimeRecords.userId, users.id))
     .where(
       and(
