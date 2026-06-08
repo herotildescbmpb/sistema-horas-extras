@@ -284,7 +284,7 @@ export default function Reports() {
                     <SelectItem value="all">Todos os servidores</SelectItem>
                     {servidoresList?.map((s) => (
                       <SelectItem key={s.matricula} value={s.matricula}>
-                        {s.nome ?? s.matricula}
+                        {s.nome ? `${s.matricula} — ${s.nome}` : s.matricula}
                       </SelectItem>
                     ))}
                   </SelectContent>

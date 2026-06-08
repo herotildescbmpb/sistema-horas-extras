@@ -218,9 +218,9 @@
 
 ## Ajustes na Tela de Relatórios — Servidor vs Cadastrante (v20)
 
-- [ ] Registros do Período: exibir nome do servidor (campo `servidor` do registro) em vez do usuário cadastrante
-- [ ] Filtro Funcionário: listar servidores distintos com horas cadastradas no período, não usuários do sistema
-- [ ] Endpoint backend: retornar lista de servidores únicos para popular o dropdown de filtro
+- [x] Registros do Período: exibir nome do servidor (nomeServidor via JOIN com tabela servidores) em vez do usuário cadastrante
+- [x] Filtro renomeado para "Servidor": lista servidores distintos com horas no período via endpoint reports.listServidores
+- [x] Endpoint reports.listServidores criado no backend para popular o dropdown de filtro
 
 ## Ajustes na Tela de Relatórios — Servidor vs Cadastrante (v20)
 
