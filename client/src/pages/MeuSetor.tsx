@@ -320,8 +320,8 @@ export default function MeuSetor() {
                         </div>
                         <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
                           <Users className="w-3.5 h-3.5" />
-                          <span>{(r as any).userName ?? "—"}</span>
-                          {(r as any).userMatricula && <span className="font-mono">({(r as any).userMatricula})</span>}
+                          <span>{(r as any).nomeServidor ?? (r as any).servidor ?? "—"}</span>
+                          {(r as any).servidor && <span className="font-mono">({(r as any).servidor})</span>}
                           {(r as any).tipoEscala && <><span>·</span><span>{(r as any).tipoEscala}</span></>}
                           {(r as any).modalidade && <><span>·</span><span>{(r as any).modalidade}</span></>}
                         </div>

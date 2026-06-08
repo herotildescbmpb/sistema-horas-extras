@@ -686,9 +686,11 @@ export async function getOvertimeRecordsByDepartment(
       userName: users.name,
       userMatricula: users.matricula,
       userDepartment: users.department,
+      nomeServidor: servidores.nome,
     })
     .from(overtimeRecords)
     .innerJoin(users, eq(overtimeRecords.userId, users.id))
+    .leftJoin(servidores, eq(overtimeRecords.servidor, servidores.matricula))
     .where(and(...(conditions as any[])))
     .orderBy(desc(overtimeRecords.date));
 }
