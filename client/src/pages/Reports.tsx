@@ -24,6 +24,8 @@ import {
   Clock,
   CheckCircle2,
   Loader2,
+  Star,
+  Zap,
 } from "lucide-react";
 import {
   BarChart,
@@ -323,7 +325,7 @@ export default function Reports() {
       </Card>
 
       {/* Summary stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
         <Card className="shadow-sm border-border/60">
           <CardContent className="pt-5 pb-5">
             <div className="flex items-center gap-3">
@@ -375,6 +377,58 @@ export default function Reports() {
                       ({pendingCount} pendente{pendingCount !== 1 ? "s" : ""})
                     </span>
                   </p>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Card: Horas Especiais */}
+        <Card className="shadow-sm border-amber-200/60 dark:border-amber-800/40 bg-amber-50/40 dark:bg-amber-950/10">
+          <CardContent className="pt-5 pb-5">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center">
+                <Star className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Horas Especiais</p>
+                {isLoading ? (
+                  <Skeleton className="h-6 w-16 mt-0.5" />
+                ) : (
+                  <>
+                    <p className="text-xl font-bold text-amber-600 dark:text-amber-400">
+                      {formatMinutes(byModalidade["Especial"] ?? 0)}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {records?.filter((r) => (r as any).modalidade === "Especial").length ?? 0} registro{(records?.filter((r) => (r as any).modalidade === "Especial").length ?? 0) !== 1 ? "s" : ""}
+                    </p>
+                  </>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Card: Horas Extraordinárias */}
+        <Card className="shadow-sm border-blue-200/60 dark:border-blue-800/40 bg-blue-50/40 dark:bg-blue-950/10">
+          <CardContent className="pt-5 pb-5">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center">
+                <Zap className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Horas Extraordinárias</p>
+                {isLoading ? (
+                  <Skeleton className="h-6 w-16 mt-0.5" />
+                ) : (
+                  <>
+                    <p className="text-xl font-bold text-blue-600 dark:text-blue-400">
+                      {formatMinutes(byModalidade["Extraordinário"] ?? 0)}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {records?.filter((r) => (r as any).modalidade === "Extraordinário").length ?? 0} registro{(records?.filter((r) => (r as any).modalidade === "Extraordinário").length ?? 0) !== 1 ? "s" : ""}
+                    </p>
+                  </>
                 )}
               </div>
             </div>
