@@ -271,6 +271,7 @@ export async function getAllOvertimeRecords(filters?: {
   endDate?: string;
   status?: string;
   userId?: number;
+  department?: string;
 }) {
   const db = await getDb();
   if (!db) return [];
@@ -284,6 +285,7 @@ export async function getAllOvertimeRecords(filters?: {
     );
   }
   if (filters?.userId) conditions.push(eq(overtimeRecords.userId, filters.userId));
+  if (filters?.department) conditions.push(eq(users.department, filters.department));
 
   const records = await db
     .select({

@@ -372,6 +372,7 @@ export const appRouter = router({
           endDate: z.string().optional(),
           status: z.string().optional(),
           userId: z.number().optional(),
+          department: z.string().optional(),
         })
       )
       .query(({ input }) => getAllOvertimeRecords(input)),
@@ -575,6 +576,7 @@ export const appRouter = router({
           startDate: z.string(),
           endDate: z.string(),
           userId: z.number().optional(),
+          department: z.string().optional(),
         })
       )
       .query(async ({ ctx, input }) => {
@@ -583,9 +585,9 @@ export const appRouter = router({
         let records;
 
         if (isAdmin && input.userId) {
-          records = await getAllOvertimeRecords({ startDate: input.startDate, endDate: input.endDate, userId: input.userId });
+          records = await getAllOvertimeRecords({ startDate: input.startDate, endDate: input.endDate, userId: input.userId, department: input.department });
         } else if (isAdmin) {
-          records = await getAllOvertimeRecords({ startDate: input.startDate, endDate: input.endDate });
+          records = await getAllOvertimeRecords({ startDate: input.startDate, endDate: input.endDate, department: input.department });
         } else if (isChefe) {
           const dept = await getDepartmentByChefe(ctx.user.id);
           if (!dept) throw new TRPCError({ code: "FORBIDDEN", message: "Você não é chefe de nenhum setor." });

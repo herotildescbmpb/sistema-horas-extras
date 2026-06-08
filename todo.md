@@ -206,3 +206,12 @@
 - [x] Botão "Exportar CSV (DAL)" adicionado na tela de Relatórios ao lado do botão existente
 - [x] Botão desabilitado quando não há registros no período selecionado
 - [x] Nome do arquivo gerado: escalas_dal_{startDate}_{endDate}.csv
+
+## Filtro por Setor nos Relatórios (v18)
+
+- [x] Adicionar seletor de setor na tela de Relatórios (visível apenas para admin)
+- [x] Atualizar endpoint reports.exportCsvDal para aceitar filtro de departamento
+- [x] Atualizar getAllOvertimeRecords no db.ts para suportar filtro por department (via users.department)
+- [x] Atualizar overtime.listAll para aceitar filtro department
+- [x] Atualizar a query de listagem de registros na tela de Relatórios para respeitar o setor selecionado
+- [x] Testar dropdown com 9 setores carregados corretamente

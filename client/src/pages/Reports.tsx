@@ -75,15 +75,18 @@ export default function Reports() {
   const [startDate, setStartDate] = useState(format(startOfMonth(new Date()), "yyyy-MM-dd"));
   const [endDate, setEndDate] = useState(format(endOfMonth(new Date()), "yyyy-MM-dd"));
   const [selectedUserId, setSelectedUserId] = useState<string>("all");
+  const [selectedDepartment, setSelectedDepartment] = useState<string>("all");
   const [exporting, setExporting] = useState(false);
 
   const { data: users } = trpc.users.list.useQuery(undefined, { enabled: isAdmin });
+  const { data: departments } = trpc.departments.list.useQuery();
 
   const { data: records, isLoading } = isAdmin
     ? trpc.overtime.listAll.useQuery({
         startDate,
         endDate,
         userId: selectedUserId !== "all" ? parseInt(selectedUserId) : undefined,
+        department: selectedDepartment !== "all" ? selectedDepartment : undefined,
       })
     : trpc.overtime.list.useQuery({ startDate, endDate });
 
@@ -101,6 +104,7 @@ export default function Reports() {
       startDate,
       endDate,
       userId: isAdmin && selectedUserId !== "all" ? parseInt(selectedUserId) : undefined,
+      department: isAdmin && selectedDepartment !== "all" ? selectedDepartment : undefined,
     },
     { enabled: false }
   );
@@ -275,6 +279,24 @@ export default function Reports() {
                     {users?.map((u) => (
                       <SelectItem key={u.id} value={String(u.id)}>
                         {u.name ?? u.email ?? `Usuário #${u.id}`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            {isAdmin && (
+              <div className="space-y-1">
+                <Label className="text-xs">Setor</Label>
+                <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
+                  <SelectTrigger className="h-9 w-full sm:w-52 text-sm">
+                    <SelectValue placeholder="Todos os setores" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos os setores</SelectItem>
+                    {departments?.map((d) => (
+                      <SelectItem key={d.id} value={d.name}>
+                        {d.shortName ? `${d.shortName} — ${d.name}` : d.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
