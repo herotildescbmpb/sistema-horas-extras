@@ -142,8 +142,8 @@ export default function Reports() {
         toast.error("Nenhum dado para exportar");
         return;
       }
-      // Sem BOM — o modelo DAL usa UTF-8 puro com separador ;
-      const blob = new Blob([result.data.csv], { type: "text/csv;charset=utf-8;" });
+      // BOM UTF-8 (﻿) garante que o Excel abra o arquivo com encoding correto
+      const blob = new Blob(["﻿" + result.data.csv], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
