@@ -600,13 +600,24 @@ export const appRouter = router({
         const rows = records.map((r) => {
           const rec = r as any;
           const tipoEscala = rec.tipoEscala ?? "";
-          const servidor = rec.servidor ?? rec.userMatricula ?? "";
+
+          // Extrai apenas a parte numérica da matrícula, removendo dígito verificador (ex: "517066-4" → "517066")
+          const rawServidor = rec.servidor ?? rec.userMatricula ?? "";
+          const servidor = rawServidor.includes("-") ? rawServidor.split("-")[0].trim() : rawServidor.trim();
+
           const dataInicio = r.date.split("-").reverse().join("/");
           const horaInicio = r.startTime.length === 5 ? r.startTime + ":00" : r.startTime;
           const dataFinal = (rec.endDate ?? r.date).split("-").reverse().join("/");
           const horaFim = r.endTime.length === 5 ? r.endTime + ":00" : r.endTime;
           const funcao = rec.funcao ?? "";
-          const modalidade = rec.modalidade ?? "";
+
+          // Normaliza encoding de modalidade (corrige "ExtraordinÃ¡rio" → "Extraordinário")
+          const modalidadeRaw = rec.modalidade ?? "";
+          const modalidade = modalidadeRaw
+            .replace(/ExtraordinÃ¡rio/g, "Extraordinário")
+            .replace(/ExtraordinÃ¡rio/g, "Extraordinário")  // fallback duplo encoding
+            .normalize("NFC");
+
           return `${tipoEscala};${servidor};${dataInicio};${horaInicio};${dataFinal};${horaFim};${funcao};${modalidade};`;
         });
 

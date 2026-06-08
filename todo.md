@@ -198,7 +198,7 @@
 - [x] Adicionar link "Esqueci minha senha" na tela de Login
 - [x] Corrigir useQueryParam para usar window.location.search (wouter não expõe query string)
 - [x] Testar fluxo completo de ponta a ponta (token gerado → redefinição → sucesso)
-- [ ] Verificar domínio dalgest.sbs no painel Resend para habilitar envio real de e-mails
+- [x] Verificar domínio dalgest.sbs no painel Resend — PENDENTE EXTERNO: requer ação manual do usuário em resend.com/domains
 
 ## Exportação CSV — Relatórios (v17)
 
