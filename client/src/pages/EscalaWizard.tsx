@@ -77,15 +77,21 @@ function getFeriadosMoveis(year: number): Set<string> {
   ]);
 }
 
-function isFeriado(date: Date): boolean {
+function isFeriadoBase(date: Date): boolean {
   const mmdd = `${String(date.getMonth()+1).padStart(2,"0")}-${String(date.getDate()).padStart(2,"0")}`;
   const moveis = getFeriadosMoveis(date.getFullYear());
   return FERIADOS_FIXOS.includes(mmdd) || moveis.has(mmdd);
 }
 
-function getModalidade(date: Date): string {
+function isFeriado(date: Date, customISODates: string[] = []): boolean {
+  if (isFeriadoBase(date)) return true;
+  const iso = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,"0")}-${String(date.getDate()).padStart(2,"0")}`;
+  return customISODates.includes(iso);
+}
+
+function getModalidade(date: Date, customISODates: string[] = []): string {
   const dow = date.getDay();
-  if (dow === 5 || dow === 6 || dow === 0 || isFeriado(date)) return "Especial";
+  if (dow === 5 || dow === 6 || dow === 0 || isFeriado(date, customISODates)) return "Especial";
   return "Extraordinário";
 }
 
@@ -149,8 +155,8 @@ interface EditingRecord {
 
 // ─── Calendário Mini ──────────────────────────────────────────────────────────
 function MiniCalendar({
-  mes, ano, markedDays,
-}: { mes: number; ano: number; markedDays: Map<number, Array<{nome: string; colorIdx: number}>> }) {
+  mes, ano, markedDays, customHolidayISO = [],
+}: { mes: number; ano: number; markedDays: Map<number, Array<{nome: string; colorIdx: number}>>; customHolidayISO?: string[] }) {
   const daysInMonth = new Date(ano, mes, 0).getDate();
   const firstDayOfWeek = new Date(ano, mes - 1, 1).getDay();
 
@@ -170,7 +176,7 @@ function MiniCalendar({
           const date = new Date(ano, mes - 1, day);
           const dow = date.getDay();
           const isWeekend = dow === 0 || dow === 6;
-          const isFer = isFeriado(date);
+          const isFer = isFeriado(date, customHolidayISO);
           const entries = markedDays.get(day) ?? [];
           const hasMarks = entries.length > 0;
           return (
@@ -264,6 +270,11 @@ export default function EscalaWizard() {
   const { data: departments_data } = trpc.departments.list.useQuery();
   const createEscala = trpc.escalas.create.useMutation();
   const launchEscala = trpc.escalas.launch.useMutation();
+  const { data: customHolidaysData = [] } = trpc.holidays.list.useQuery({ year: ano });
+  const customHolidayISO = useMemo(
+    () => customHolidaysData.map((h: { date: string }) => h.date),
+    [customHolidaysData]
+  );
 
   // Autocomplete — busca para o militar atual
   const currentMilitar = militares[currentMilitarIdx];
@@ -346,11 +357,11 @@ export default function EscalaWizard() {
         const totalMinutes = calcMinutes(st, et);
         const dayType = (() => {
           const dow = date.getDay();
-          if (dow === 0 || isFeriado(date)) return "sunday_holiday";
+          if (dow === 0 || isFeriado(date, customHolidayISO)) return "sunday_holiday";
           if (dow === 6) return "saturday";
           return "weekday";
         })();
-        const modalidade = getModalidade(date);
+        const modalidade = getModalidade(date, customHolidayISO);
         const dateStr = `${ano}-${String(mes).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
         items.push({
           matricula: m.matricula,
@@ -434,7 +445,7 @@ export default function EscalaWizard() {
         const st = ov?.startTime ?? globalStartTime;
         const et = ov?.endTime ?? globalEndTime;
         const date = getDayDate(day);
-        const mod = getModalidade(date);
+        const mod = getModalidade(date, customHolidayISO);
         return `<td style="text-align:center;background:${mod === "Especial" ? "#fff3cd" : "#e8f4fd"};font-size:11px">${st}<br/>${et}<br/><span style="font-size:9px;color:#666">${fmtHours(calcMinutes(st,et))}</span></td>`;
       });
       return `<tr>
@@ -448,7 +459,7 @@ export default function EscalaWizard() {
     const headerCells = allDays.map(day => {
       const date = getDayDate(day);
       const dow = date.getDay();
-      const isFer = isFeriado(date);
+      const isFer = isFeriado(date, customHolidayISO);
       const bg = isFer ? "#fff3cd" : (dow === 0 || dow === 6) ? "#dbeafe" : "#f0f4f8";
       return `<th style="text-align:center;padding:4px 6px;background:${bg};font-size:11px">${String(day).padStart(2,"0")}/${String(mes).padStart(2,"0")}<br/><span style="font-weight:400;font-size:9px">${DIAS_SEMANA_SHORT[dow]}</span></th>`;
     });
@@ -836,7 +847,7 @@ export default function EscalaWizard() {
                         const date = getDayDate(day);
                         const dow = date.getDay();
                         const isWeekend = dow === 0 || dow === 6;
-                        const isFer = isFeriado(date);
+                        const isFer = isFeriado(date, customHolidayISO);
                         const isSelected = m.selectedDays.has(day);
                         const hasOverride = !!m.dayOverrides[day];
 
@@ -890,12 +901,12 @@ export default function EscalaWizard() {
                         {sortedDays.map(day => {
                           const date = getDayDate(day);
                           const dow = date.getDay();
-                          const isFer = isFeriado(date);
+                          const isFer = isFeriado(date, customHolidayISO);
                           const override = m.dayOverrides[day];
                           const st = override?.startTime ?? globalStartTime;
                           const et = override?.endTime ?? globalEndTime;
                           const mins = calcMinutes(st, et);
-                          const modalidade = getModalidade(date);
+                          const modalidade = getModalidade(date, customHolidayISO);
 
                           return (
                             <div key={day} className="border border-border rounded-lg p-3 bg-muted/20 space-y-2">
@@ -984,7 +995,7 @@ export default function EscalaWizard() {
                   Visão Geral do Calendário — {MESES[mes-1]} {ano}
                 </h3>
                 <div className="border border-border rounded-xl p-4 bg-muted/10">
-                  <MiniCalendar mes={mes} ano={ano} markedDays={markedDaysMap} />
+                  <MiniCalendar mes={mes} ano={ano} markedDays={markedDaysMap} customHolidayISO={customHolidayISO} />
                   {/* Legenda de cores — uma linha única com cor, nome completo e dias */}
                   <div className="flex flex-wrap gap-x-4 gap-y-2 mt-3">
                     {militares.filter(m => m.matricula).map((m, idx) => {
@@ -1030,12 +1041,12 @@ export default function EscalaWizard() {
                         {sortedDays.map(day => {
                           const date = getDayDate(day);
                           const dow = date.getDay();
-                          const isFer = isFeriado(date);
+                          const isFer = isFeriado(date, customHolidayISO);
                           const override = m.dayOverrides[day];
                           const st = override?.startTime ?? globalStartTime;
                           const et = override?.endTime ?? globalEndTime;
                           const mins = calcMinutes(st, et);
-                          const modalidade = getModalidade(date);
+                          const modalidade = getModalidade(date, customHolidayISO);
                           const isEditing = editingRecord?.militarId === m.id && editingRecord?.day === day;
 
                           return (

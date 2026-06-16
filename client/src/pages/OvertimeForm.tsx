@@ -41,7 +41,7 @@ function calcEasterForm(year: number): Date {
   const day = ((h + l - 7 * m + 114) % 31) + 1;
   return new Date(year, month - 1, day);
 }
-function isFeriadoForm(date: Date): boolean {
+function isFeriadoFormBase(date: Date): boolean {
   const mmdd = `${String(date.getMonth()+1).padStart(2,"0")}-${String(date.getDate()).padStart(2,"0")}`;
   const easter = calcEasterForm(date.getFullYear());
   const addDays = (d: Date, n: number) => { const r = new Date(d); r.setDate(r.getDate()+n); return r; };
@@ -49,14 +49,20 @@ function isFeriadoForm(date: Date): boolean {
   const moveis = new Set([fmt(addDays(easter,-48)),fmt(addDays(easter,-47)),fmt(addDays(easter,-2)),fmt(easter),fmt(addDays(easter,60))]);
   return FERIADOS_FIXOS_FORM.includes(mmdd) || moveis.has(mmdd);
 }
+function isFeriadoForm(date: Date, customs: string[] = []): boolean {
+  if (isFeriadoFormBase(date)) return true;
+  const iso = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,"0")}-${String(date.getDate()).padStart(2,"0")}`;
+  return customs.includes(iso);
+}
 
 interface DateCalendarProps {
   mes: number;  // 1-12
   ano: number;
   selectedDate: string; // DD/MM/AAAA
   onSelect: (dateBR: string) => void;
+  customHolidayDates?: string[]; // ISO YYYY-MM-DD
 }
-function DateCalendar({ mes, ano, selectedDate, onSelect }: DateCalendarProps) {
+function DateCalendar({ mes, ano, selectedDate, onSelect, customHolidayDates = [] }: DateCalendarProps) {
   const daysInMonth = new Date(ano, mes, 0).getDate();
   const firstDayOfWeek = new Date(ano, mes - 1, 1).getDay();
   const selectedDay = (() => {
@@ -88,7 +94,7 @@ function DateCalendar({ mes, ano, selectedDate, onSelect }: DateCalendarProps) {
           const date = new Date(ano, mes - 1, day);
           const dow = date.getDay();
           const isWeekend = dow === 0 || dow === 6;
-          const isFer = isFeriadoForm(date);
+          const isFer = isFeriadoForm(date, customHolidayDates);
           const isSelected = selectedDay === day;
           const isTod = isToday(day);
           const dd = String(day).padStart(2,"0");
@@ -224,20 +230,24 @@ function isBrazilianHoliday(date: Date): boolean {
   return mobile.some(h => h.getMonth() === date.getMonth() && h.getDate() === date.getDate());
 }
 
-function getModalidade(dateStr: string): "Especial" | "Extraordinário" | "" {
+function getModalidade(dateStr: string, customs: Array<{ date: string }> = []): "Especial" | "Extraordinário" | "" {
   const date = parseDateBR(dateStr);
   if (!date) return "";
   const dow = date.getDay();
-  return (dow === 5 || dow === 6 || dow === 0 || isBrazilianHoliday(date))
+  const iso = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,"0")}-${String(date.getDate()).padStart(2,"0")}`;
+  const isCustomHol = customs.some(h => h.date === iso);
+  return (dow === 5 || dow === 6 || dow === 0 || isBrazilianHoliday(date) || isCustomHol)
     ? "Especial" : "Extraordinário";
 }
 
-function getDayType(dateStr: string): "weekday" | "saturday" | "sunday_holiday" {
+function getDayType(dateStr: string, customs: Array<{ date: string }> = []): "weekday" | "saturday" | "sunday_holiday" {
   const date = parseDateBR(dateStr);
   if (!date) return "weekday";
   const dow = date.getDay();
   if (dow === 6) return "saturday";
-  if (dow === 0 || isBrazilianHoliday(date)) return "sunday_holiday";
+  const iso = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,"0")}-${String(date.getDate()).padStart(2,"0")}`;
+  const isCustomHol = customs.some(h => h.date === iso);
+  if (dow === 0 || isBrazilianHoliday(date) || isCustomHol) return "sunday_holiday";
   return "weekday";
 }
 
@@ -315,13 +325,6 @@ export default function OvertimeForm() {
   const watchEnd = watch("endTime");
   const watchModalidade = watch("modalidade");
 
-  // Auto-set modalidade when date changes
-  useEffect(() => {
-    if (watchDate?.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
-      setValue("modalidade", getModalidade(watchDate), { shouldValidate: true });
-    }
-  }, [watchDate, setValue]);
-
   // Current record duration
   const currentMinutes = useMemo(() => calcMinutes(watchStart, watchEnd), [watchStart, watchEnd]);
 
@@ -335,6 +338,13 @@ export default function OvertimeForm() {
     { year: qYear },
     { enabled: !!watchDate }
   );
+
+  // Auto-set modalidade when date changes (after customHolidays is declared)
+  useEffect(() => {
+    if (watchDate?.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+      setValue("modalidade", getModalidade(watchDate, customHolidays), { shouldValidate: true });
+    }
+  }, [watchDate, customHolidays, setValue]);
   const customHolidayDates = useMemo(
     () => customHolidays.map((h: { date: string }) => h.date),
     [customHolidays]
@@ -708,6 +718,7 @@ export default function OvertimeForm() {
                         field.onChange(dateBR);
                         setValue("date", dateBR, { shouldValidate: true });
                       }}
+                      customHolidayDates={customHolidayDates}
                     />
                   )}
                 />
