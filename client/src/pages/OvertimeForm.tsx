@@ -309,7 +309,7 @@ export default function OvertimeForm() {
   const autocompleteRef = useRef<HTMLDivElement>(null);
 
   const {
-    register, handleSubmit, control, watch, setValue, reset,
+    register, handleSubmit, control, watch, setValue, reset, getValues,
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -339,12 +339,6 @@ export default function OvertimeForm() {
     { enabled: !!watchDate }
   );
 
-  // Auto-set modalidade when date changes (after customHolidays is declared)
-  useEffect(() => {
-    if (watchDate?.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
-      setValue("modalidade", getModalidade(watchDate, customHolidays), { shouldValidate: true });
-    }
-  }, [watchDate, customHolidays, setValue]);
   const customHolidayDates = useMemo(
     () => customHolidays.map((h: { date: string }) => h.date),
     [customHolidays]
@@ -360,6 +354,18 @@ export default function OvertimeForm() {
   }, [watchDate, customHolidayDates]);
   const startSlots = useMemo(() => getStartSlots(activeDayType), [activeDayType]);
   const endSlots = useMemo(() => getEndSlots(activeDayType), [activeDayType]);
+
+  // Auto-set modalidade + reset hora inválida when date changes
+  useEffect(() => {
+    if (watchDate?.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+      setValue("modalidade", getModalidade(watchDate, customHolidays), { shouldValidate: true });
+      const currentStart = getValues("startTime");
+      const currentEnd   = getValues("endTime");
+      if (currentStart && !startSlots.includes(currentStart)) setValue("startTime", "");
+      if (currentEnd   && !endSlots.includes(currentEnd))     setValue("endTime",   "");
+    }
+  }, [watchDate, customHolidays, startSlots, endSlots, setValue, getValues]);
+
   const { data: monthSummary } = trpc.reports.monthSummary.useQuery(
     { year: qYear, month: qMonth },
     { enabled: !!user }
@@ -786,6 +792,15 @@ export default function OvertimeForm() {
                   {errors.endTime && <p className="text-xs text-destructive mt-1">{errors.endTime.message}</p>}
                 </div>
               </div>
+
+              {/* Label dinâmico de faixa de horário */}
+              {watchDate?.match(/^\d{2}\/\d{2}\/\d{4}$/) && (
+                <p className="text-xs text-muted-foreground -mt-1">
+                  {activeDayType !== "weekday"
+                    ? "⏰ Sábado, domingo ou feriado — horários disponíveis: 07:30 a 23:50"
+                    : "⏰ Dia útil — horários disponíveis: 13:00 a 23:50"}
+                </p>
+              )}
 
               {/* Live duration */}
               {currentMinutes > 0 && (
