@@ -333,30 +333,48 @@ export default function OvertimeForm() {
   const qYear = dateObj?.getFullYear() ?? new Date().getFullYear();
   const qMonth = dateObj ? dateObj.getMonth() + 1 : new Date().getMonth() + 1;
 
-  // ─── Lógica de slots — sem dependência de array instável ──────────────────────
-  // dayCategory é uma string estável derivada apenas da data (sem arrays externos)
+  // ─── Feriados manuais do banco — query estabilizada, usada como string primitiva ─────────
+  // Busca feriados do banco — staleTime alto evita refetch e mantém referência estável
+  const { data: rawCustomHolidays } = trpc.holidays.list.useQuery(
+    { year: new Date().getFullYear() },
+    { staleTime: Infinity, refetchOnWindowFocus: false }
+  );
+
+  // String "YYYY-MM-DD,YYYY-MM-DD,..." — primitiva, estável, segura como dep de useMemo/useEffect
+  // Só muda quando o admin adiciona/remove um feriado e a query refaz o fetch
+  const customHolidayKey = useMemo(
+    () => (rawCustomHolidays ?? []).map((h: { date: string }) => h.date).sort().join(","),
+    [rawCustomHolidays]
+  );
+
+  // Datas de feriados customizados como array — usado APENAS para o calendário visual
+  const customHolidayDates = useMemo(
+    () => (rawCustomHolidays ?? []).map((h: { date: string }) => h.date),
+    [rawCustomHolidays]
+  );
+
+  // ─── Lógica de slots — dayCategory derivado de primitivas estáveis ────────────────────
+  // dayCategory é uma string estável derivada da data + feriados manuais (via string primitiva)
   const dayCategory: "extended" | "weekday" = useMemo(() => {
     const date = parseDateBR(watchDate ?? "");
     if (!date) return "weekday";
     const dow = date.getDay();
+    // Sábado (6) ou Domingo (0)
     if (dow === 0 || dow === 6) return "extended";
+    // Feriado nacional fixo ou móvel (calculado localmente, sem rede)
     if (isBrazilianHoliday(date)) return "extended";
+    // Feriado manual cadastrado pelo admin — usa string primitiva estável
+    const iso = [
+      date.getFullYear(),
+      String(date.getMonth() + 1).padStart(2, "0"),
+      String(date.getDate()).padStart(2, "0"),
+    ].join("-");
+    if (customHolidayKey.includes(iso)) return "extended";
     return "weekday";
-  }, [watchDate]); // ← APENAS watchDate, sem arrays externos
+  }, [watchDate, customHolidayKey]); // ← ambas primitivas (string), nunca criam objeto novo
 
   // activeSlots aponta para constantes de módulo — mesma referência sempre
   const activeSlots = dayCategory === "extended" ? SLOTS_EXTENDED : SLOTS_WEEKDAY;
-
-  // Feriados customizados — usados APENAS para o calendário visual e label informativo
-  // NÃO usados em useEffect de slots/modalidade para evitar loop
-  const { data: customHolidaysData } = trpc.holidays.list.useQuery(
-    { year: qYear },
-    { staleTime: Infinity, refetchOnWindowFocus: false }
-  );
-  const customHolidayDates = useMemo(
-    () => customHolidaysData?.map((h: { date: string }) => h.date) ?? [],
-    [customHolidaysData]
-  );
 
   // Auto-preenche modalidade quando a data muda — shouldValidate: false evita cascata
   useEffect(() => {
