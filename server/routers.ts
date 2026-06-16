@@ -70,6 +70,12 @@ import {
   getHorasPorServidor,
   getHorasPorSetor,
   getEvolucaoMensal,
+  listCustomHolidays,
+  createCustomHoliday,
+  updateCustomHoliday,
+  deleteCustomHoliday,
+  getAllOvertimeRecordsPaginated,
+  adminUpdateOvertimeRecord,
 } from "./db";
 import { sendPasswordResetEmail, sendWelcomeEmail } from "./_core/email";
 
@@ -98,6 +104,32 @@ function calcMinutes(start: string, end: string): number {
 // ─── App Router ───────────────────────────────────────────────────────────────
 export const appRouter = router({
   system: systemRouter,
+
+  // ─── Holidays ──────────────────────────────────────────────────────────────
+  holidays: router({
+    list: protectedProcedure
+      .input(z.object({ year: z.number().optional() }))
+      .query(({ input }) => listCustomHolidays(input.year)),
+    create: adminProcedure
+      .input(z.object({
+        date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+        name: z.string().min(3).max(120),
+        description: z.string().max(255).optional(),
+      }))
+      .mutation(({ ctx, input }) =>
+        createCustomHoliday({ ...input, createdBy: ctx.user.id })
+      ),
+    update: adminProcedure
+      .input(z.object({
+        id: z.number(),
+        name: z.string().min(3).max(120).optional(),
+        description: z.string().max(255).optional(),
+      }))
+      .mutation(({ input }) => updateCustomHoliday(input)),
+    delete: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(({ input }) => deleteCustomHoliday(input.id)),
+  }),
 
   auth: router({
     me: publicProcedure.query((opts) => opts.ctx.user),
@@ -532,6 +564,60 @@ export const appRouter = router({
       .mutation(({ ctx, input }) =>
         reviewOvertimeRecord(input.id, ctx.user.id, input.status, input.reviewNote)
       ),
+
+    // Admin: editar qualquer campo de um registro
+    adminUpdate: adminProcedure
+      .input(
+        z.object({
+          id: z.number(),
+          startTime: z.string().optional(),
+          endTime: z.string().optional(),
+          reason: z.string().optional(),
+          status: z.enum(["pending", "approved", "rejected"]).optional(),
+          tipoEscala: z.string().optional(),
+          funcao: z.string().optional(),
+          modalidade: z.string().optional(),
+          department: z.string().optional(),
+          date: z.string().optional(),
+          endDate: z.string().optional(),
+          servidor: z.string().optional(),
+          reviewNote: z.string().optional(),
+          totalMinutes: z.number().optional(),
+          dayType: z.enum(["weekday", "saturday", "sunday_holiday"]).optional(),
+          multiplier: z.string().optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const { id, ...data } = input;
+        // Recalcular totalMinutes se horários foram alterados
+        if ((data.startTime || data.endTime) && !data.totalMinutes) {
+          const record = await getOvertimeRecordById(id);
+          if (record) {
+            const start = data.startTime ?? record.startTime;
+            const end = data.endTime ?? record.endTime;
+            const mins = calcMinutes(start, end);
+            if (mins > 0 && mins < 1440) data.totalMinutes = mins;
+          }
+        }
+        return adminUpdateOvertimeRecord(id, data);
+      }),
+
+    // Admin: listagem paginada com busca
+    listPaginated: adminProcedure
+      .input(
+        z.object({
+          startDate: z.string().optional(),
+          endDate: z.string().optional(),
+          status: z.string().optional(),
+          userId: z.number().optional(),
+          department: z.string().optional(),
+          servidor: z.string().optional(),
+          search: z.string().optional(),
+          page: z.number().default(1),
+          pageSize: z.number().default(50),
+        })
+      )
+      .query(({ input }) => getAllOvertimeRecordsPaginated(input)),
   }),
 
   // ─── Reports ──────────────────────────────────────────────────────────────────────────────

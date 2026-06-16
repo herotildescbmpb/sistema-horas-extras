@@ -1,4 +1,5 @@
 import { trpc } from "@/lib/trpc";
+import { getStartSlots, getEndSlots } from "@/lib/timeSlots";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -147,18 +148,7 @@ const FUNCOES = [
   "Vice-Diretor",
 ];
 
-// Time slots from 13:00 to 23:50 every 10 min
-function generateTimeSlots(): string[] {
-  const slots: string[] = [];
-  let h = 13, m = 0;
-  while (h * 60 + m <= 23 * 60 + 50) {
-    slots.push(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
-    m += 10;
-    if (m >= 60) { h++; m -= 60; }
-  }
-  return slots;
-}
-const TIME_SLOTS = generateTimeSlots();
+// Time slots dinâmicos — ver import no topo do arquivo
 
 // ─── Date helpers ─────────────────────────────────────────────────────────────
 
@@ -339,6 +329,27 @@ export default function OvertimeForm() {
   const dateObj = parseDateBR(watchDate);
   const qYear = dateObj?.getFullYear() ?? new Date().getFullYear();
   const qMonth = dateObj ? dateObj.getMonth() + 1 : new Date().getMonth() + 1;
+
+  // Slots de horário dinâmicos baseados no dayType da data selecionada
+  const { data: customHolidays = [] } = trpc.holidays.list.useQuery(
+    { year: qYear },
+    { enabled: !!watchDate }
+  );
+  const customHolidayDates = useMemo(
+    () => customHolidays.map((h: { date: string }) => h.date),
+    [customHolidays]
+  );
+  const activeDayType = useMemo(() => {
+    if (!watchDate?.match(/^\d{2}\/\d{2}\/\d{4}$/)) return "weekday" as const;
+    const iso = toISO(watchDate);
+    const dow = new Date(iso + "T12:00:00").getDay();
+    if (customHolidayDates.includes(iso)) return "sunday_holiday" as const;
+    if (dow === 0 || isBrazilianHoliday(parseDateBR(watchDate)!)) return "sunday_holiday" as const;
+    if (dow === 6) return "saturday" as const;
+    return "weekday" as const;
+  }, [watchDate, customHolidayDates]);
+  const startSlots = useMemo(() => getStartSlots(activeDayType), [activeDayType]);
+  const endSlots = useMemo(() => getEndSlots(activeDayType), [activeDayType]);
   const { data: monthSummary } = trpc.reports.monthSummary.useQuery(
     { year: qYear, month: qMonth },
     { enabled: !!user }
@@ -734,7 +745,7 @@ export default function OvertimeForm() {
                           <SelectValue placeholder="[HH:MM]" />
                         </SelectTrigger>
                         <SelectContent className="max-h-56">
-                          {TIME_SLOTS.map((t) => (
+                          {startSlots.map((t: string) => (
                             <SelectItem key={t} value={t}>{t}</SelectItem>
                           ))}
                         </SelectContent>
@@ -754,7 +765,7 @@ export default function OvertimeForm() {
                           <SelectValue placeholder="[HH:MM]" />
                         </SelectTrigger>
                         <SelectContent className="max-h-56">
-                          {TIME_SLOTS.map((t) => (
+                          {endSlots.map((t: string) => (
                             <SelectItem key={t} value={t}>{t}</SelectItem>
                           ))}
                         </SelectContent>

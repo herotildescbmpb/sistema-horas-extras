@@ -1,6 +1,7 @@
 import { and, desc, eq, gt, gte, isNull, like, lte, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
+  customHolidays,
   departments,
   escalaItems,
   escalas,
@@ -1138,4 +1139,190 @@ export async function getEvolucaoMensal(
   }
 
   return result;
+}
+
+// ─── Custom Holidays ──────────────────────────────────────────────────────────
+
+export async function listCustomHolidays(year?: number) {
+  const db = await getDb();
+  if (!db) return [];
+  if (year) {
+    return db
+      .select()
+      .from(customHolidays)
+      .where(sql`YEAR(${customHolidays.date}) = ${year}`)
+      .orderBy(customHolidays.date);
+  }
+  return db.select().from(customHolidays).orderBy(customHolidays.date);
+}
+
+export async function createCustomHoliday(data: {
+  date: string;
+  name: string;
+  description?: string;
+  createdBy: number;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(customHolidays).values({
+    date: data.date,
+    name: data.name,
+    description: data.description ?? null,
+    createdBy: data.createdBy,
+  });
+}
+
+export async function updateCustomHoliday(data: {
+  id: number;
+  name?: string;
+  description?: string;
+}) {
+  const db = await getDb();
+  if (!db) return;
+  const updateData: Record<string, unknown> = {};
+  if (data.name !== undefined) updateData.name = data.name;
+  if (data.description !== undefined) updateData.description = data.description;
+  if (Object.keys(updateData).length > 0) {
+    await db.update(customHolidays).set(updateData).where(eq(customHolidays.id, data.id));
+  }
+}
+
+export async function deleteCustomHoliday(id: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(customHolidays).where(eq(customHolidays.id, id));
+}
+
+// ─── Admin Overtime Records (paginado) ────────────────────────────────────────
+
+export async function getAllOvertimeRecordsPaginated(filters?: {
+  startDate?: string;
+  endDate?: string;
+  status?: string;
+  userId?: number;
+  department?: string;
+  servidor?: string;
+  search?: string;
+  page?: number;
+  pageSize?: number;
+}) {
+  const db = await getDb();
+  if (!db) return { records: [], totalCount: 0 };
+
+  const page = filters?.page ?? 1;
+  const pageSize = filters?.pageSize ?? 50;
+  const offset = (page - 1) * pageSize;
+
+  const conditions = [];
+  if (filters?.startDate) conditions.push(gte(overtimeRecords.date, filters.startDate));
+  if (filters?.endDate) conditions.push(lte(overtimeRecords.date, filters.endDate));
+  if (filters?.status) {
+    conditions.push(eq(overtimeRecords.status, filters.status as "pending" | "approved" | "rejected"));
+  }
+  if (filters?.userId) conditions.push(eq(overtimeRecords.userId, filters.userId));
+  if (filters?.department) conditions.push(eq(overtimeRecords.department, filters.department));
+  if (filters?.servidor) conditions.push(eq(overtimeRecords.servidor, filters.servidor));
+  if (filters?.search) {
+    const term = `%${filters.search}%`;
+    conditions.push(
+      or(
+        like(users.name, term),
+        like(users.matricula, term),
+        like(overtimeRecords.servidor, term)
+      )
+    );
+  }
+
+  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+  const [records, countRows] = await Promise.all([
+    db
+      .select({
+        id: overtimeRecords.id,
+        userId: overtimeRecords.userId,
+        tipoEscala: overtimeRecords.tipoEscala,
+        servidor: overtimeRecords.servidor,
+        date: overtimeRecords.date,
+        endDate: overtimeRecords.endDate,
+        startTime: overtimeRecords.startTime,
+        endTime: overtimeRecords.endTime,
+        funcao: overtimeRecords.funcao,
+        modalidade: overtimeRecords.modalidade,
+        totalMinutes: overtimeRecords.totalMinutes,
+        dayType: overtimeRecords.dayType,
+        multiplier: overtimeRecords.multiplier,
+        reason: overtimeRecords.reason,
+        project: overtimeRecords.project,
+        department: overtimeRecords.department,
+        status: overtimeRecords.status,
+        reviewedBy: overtimeRecords.reviewedBy,
+        reviewedAt: overtimeRecords.reviewedAt,
+        reviewNote: overtimeRecords.reviewNote,
+        createdAt: overtimeRecords.createdAt,
+        updatedAt: overtimeRecords.updatedAt,
+        userName: users.name,
+        userEmail: users.email,
+        userDepartment: users.department,
+        userMatricula: users.matricula,
+        nomeServidor: servidores.nome,
+      })
+      .from(overtimeRecords)
+      .leftJoin(users, eq(overtimeRecords.userId, users.id))
+      .leftJoin(servidores, sql`SUBSTRING_INDEX(${overtimeRecords.servidor}, '-', 1) = ${servidores.matricula}`)
+      .where(whereClause)
+      .orderBy(desc(overtimeRecords.date))
+      .limit(pageSize)
+      .offset(offset),
+    db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(overtimeRecords)
+      .leftJoin(users, eq(overtimeRecords.userId, users.id))
+      .leftJoin(servidores, sql`SUBSTRING_INDEX(${overtimeRecords.servidor}, '-', 1) = ${servidores.matricula}`)
+      .where(whereClause),
+  ]);
+
+  return { records, totalCount: Number(countRows[0]?.count ?? 0) };
+}
+
+export async function adminUpdateOvertimeRecord(
+  id: number,
+  data: {
+    startTime?: string;
+    endTime?: string;
+    reason?: string;
+    status?: "pending" | "approved" | "rejected";
+    tipoEscala?: string;
+    funcao?: string;
+    modalidade?: string;
+    department?: string;
+    date?: string;
+    endDate?: string;
+    servidor?: string;
+    reviewNote?: string;
+    totalMinutes?: number;
+    dayType?: "weekday" | "saturday" | "sunday_holiday";
+    multiplier?: string;
+  }
+) {
+  const db = await getDb();
+  if (!db) return;
+  const updateData: Record<string, unknown> = {};
+  if (data.startTime !== undefined) updateData.startTime = data.startTime;
+  if (data.endTime !== undefined) updateData.endTime = data.endTime;
+  if (data.reason !== undefined) updateData.reason = data.reason;
+  if (data.status !== undefined) updateData.status = data.status;
+  if (data.tipoEscala !== undefined) updateData.tipoEscala = data.tipoEscala;
+  if (data.funcao !== undefined) updateData.funcao = data.funcao;
+  if (data.modalidade !== undefined) updateData.modalidade = data.modalidade;
+  if (data.department !== undefined) updateData.department = data.department;
+  if (data.date !== undefined) updateData.date = data.date;
+  if (data.endDate !== undefined) updateData.endDate = data.endDate;
+  if (data.servidor !== undefined) updateData.servidor = data.servidor;
+  if (data.reviewNote !== undefined) updateData.reviewNote = data.reviewNote;
+  if (data.totalMinutes !== undefined) updateData.totalMinutes = data.totalMinutes;
+  if (data.dayType !== undefined) updateData.dayType = data.dayType;
+  if (data.multiplier !== undefined) updateData.multiplier = data.multiplier;
+  if (Object.keys(updateData).length > 0) {
+    await db.update(overtimeRecords).set(updateData).where(eq(overtimeRecords.id, id));
+  }
 }

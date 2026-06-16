@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE `custom_holidays` (\n\t`id` int AUTO_INCREMENT NOT NULL,\n\t`date` varchar(10) NOT NULL,\n\t`name` varchar(120) NOT NULL,\n\t`description` varchar(255),\n\t`created_by` int NOT NULL,\n\t`createdAt` timestamp NOT NULL DEFAULT (now()),\n\t`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,\n\tCONSTRAINT `custom_holidays_id` PRIMARY KEY(`id`),\n\tCONSTRAINT `custom_holidays_date_unique` UNIQUE(`date`)\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4XMYXLTg6g9ZctA.83aa4a08e73e --database cDx3jwjHrzRKbmDZmbrJYX --execute CREATE TABLE `custom_holidays` (\n\t`id` int AUTO_INCREMENT NOT NULL,\n\t`date` varchar(10) NOT NULL,\n\t`name` varchar(120) NOT NULL,\n\t`description` varchar(255),\n\t`created_by` int NOT NULL,\n\t`createdAt` timestamp NOT NULL DEFAULT (now()),\n\t`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,\n\tCONSTRAINT `custom_holidays_id` PRIMARY KEY(`id`),\n\tCONSTRAINT `custom_holidays_date_unique` UNIQUE(`date`)\n);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 403
+}

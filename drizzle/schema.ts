@@ -222,3 +222,16 @@ export const bravoSyncLogs = mysqlTable("bravo_sync_logs", {
 });
 export type BravoSyncLog = typeof bravoSyncLogs.$inferSelect;
 export type InsertBravoSyncLog = typeof bravoSyncLogs.$inferInsert;
+
+// Feriados customizados cadastrados pelo administrador
+export const customHolidays = mysqlTable("custom_holidays", {
+  id: int("id").autoincrement().primaryKey(),
+  date: varchar("date", { length: 10 }).notNull().unique(), // YYYY-MM-DD
+  name: varchar("name", { length: 120 }).notNull(),
+  description: varchar("description", { length: 255 }),
+  createdBy: int("created_by").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type CustomHoliday = typeof customHolidays.$inferSelect;
+export type InsertCustomHoliday = typeof customHolidays.$inferInsert;

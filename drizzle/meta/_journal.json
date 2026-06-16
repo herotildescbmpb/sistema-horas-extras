@@ -85,6 +85,13 @@
       "when": 1780961627904,
       "tag": "0011_foamy_scarlet_witch",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "5",
+      "when": 1781622138125,
+      "tag": "0012_kind_blue_blade",
+      "breakpoints": true
     }
   ]
 }

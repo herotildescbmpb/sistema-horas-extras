@@ -54,6 +54,8 @@ const ALL_NAV_ITEMS: NavItem[] = [
   { label: "Usuários",     href: "/admin/usuarios", icon: Users,           adminOnly: true },
   { label: "Setores",      href: "/admin/setores",  icon: Building2,       adminOnly: true },
   { label: "Permissões",   href: "/admin/permissoes", icon: Settings,      adminOnly: true },
+  { label: "Painel Escalas", href: "/admin/escalas",  icon: CalendarRange,   adminOnly: true },
+  { label: "Feriados",       href: "/admin/feriados", icon: CalendarRange,   adminOnly: true },
   { label: "Guia do Usuário", href: "/guia",           icon: BookOpen },
   { label: "Bravo Sync",     href: "/bravo",          icon: Zap,             adminOnly: true, badge: "AUTO" },
 ];

@@ -282,3 +282,28 @@
 - [x] Credenciais BRAVO_EMAIL, BRAVO_PASSWORD, BRAVO_HOMOLOGADOR_ID configuradas
 - [x] Deploy do site (necessário para ativar o agendamento automático)
 - [x] Criar heartbeat cron via CLI após o deploy — task_uid: bh5Bpw3cqRPRexZyK7viFv (00:01 BRT diário)
+
+## Melhorias v28 — Painel Admin · Horários Sáb/Dom/Feriado · Feriados Manuais
+
+### Melhoria 1 — Painel Admin Completo (AdminEscalas)
+- [ ] Backend: confirmar/criar overtime.listAll (adminProcedure) com JOIN em users, paginação e totalCount
+- [ ] Backend: criar overtime.adminUpdate (adminProcedure) para edição completa de qualquer registro
+- [ ] Backend: confirmar overtime.delete aceita qualquer id (admin)
+- [ ] Frontend: criar AdminEscalas.tsx com filtros, tabela paginada, modal de edição parcial, AlertDialog de exclusão
+- [ ] AppLayout: adicionar item "Escalas (Admin)" → /admin/escalas
+- [ ] App.tsx: adicionar rota /admin/escalas
+
+### Melhoria 2 — Horários Estendidos Sáb/Dom/Feriado
+- [ ] Criar client/src/lib/timeSlots.ts com SLOTS_WEEKDAY (13:00–23:50) e SLOTS_EXTENDED (07:30–23:50)
+- [ ] OvertimeForm.tsx: usar slots dinâmicos baseados no dia da semana e feriados customizados
+- [ ] OvertimeForm.tsx: criar isHoliday() combinando isBrazilianHoliday() + feriados do banco
+- [ ] BatchSchedule.tsx: aplicar mesma lógica de slots dinâmicos
+
+### Melhoria 3 — Gestão de Feriados pelo Admin
+- [ ] Schema Drizzle: adicionar tabela customHolidays em drizzle/schema.ts
+- [ ] Migration SQL: CREATE TABLE custom_holidays e aplicar via webdev_execute_sql
+- [ ] Backend db.ts: listCustomHolidays, createCustomHoliday, updateCustomHoliday, deleteCustomHoliday
+- [ ] Backend routers.ts: criar router holidays (list protectedProcedure; create/update/delete adminProcedure)
+- [ ] Frontend: criar AdminFeriados.tsx com lista de feriados automáticos + tabela de feriados manuais
+- [ ] AppLayout: adicionar item "Feriados" → /admin/feriados
+- [ ] App.tsx: adicionar rota /admin/feriados

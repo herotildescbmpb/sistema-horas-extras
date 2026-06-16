@@ -19,6 +19,8 @@ import EscalaDetail from "./pages/EscalaDetail";
 import NovoRegistro from "./pages/NovoRegistro";
 import MeuSetor from "./pages/MeuSetor";
 import AdminPermissions from "./pages/AdminPermissions";
+import AdminEscalas from "./pages/AdminEscalas";
+import AdminFeriados from "./pages/AdminFeriados";
 import UserGuide from "./pages/UserGuide";
 import BravoSync from "./pages/BravoSync";
 import Login from "./pages/Login";
@@ -39,6 +41,8 @@ function ProtectedRouter() {
         <Route path="/admin/usuarios" component={AdminUsers} />
         <Route path="/admin/setores" component={AdminDepartments} />
         <Route path="/admin/permissoes" component={AdminPermissions} />
+        <Route path="/admin/escalas" component={AdminEscalas} />
+        <Route path="/admin/feriados" component={AdminFeriados} />
         <Route path="/escalas" component={EscalaList} />
         <Route path="/escalas/nova" component={EscalaWizard} />
         <Route path="/escalas/:id" component={EscalaDetail} />
