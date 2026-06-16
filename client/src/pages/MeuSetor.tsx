@@ -11,7 +11,7 @@ import {
 import { StatusBadge, DayTypeBadge } from "@/components/StatusBadge";
 import {
   Building2, CalendarRange, Clock, ExternalLink, Filter,
-  Users, FileText, AlertCircle,
+  Users, FileText, AlertCircle, Pencil,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -273,11 +273,20 @@ export default function MeuSetor() {
                           {e.department && <><span>·</span><span>{e.department}</span></>}
                         </div>
                       </div>
-                      <Button asChild variant="ghost" size="sm" className="gap-1.5 text-xs text-muted-foreground hover:text-foreground">
-                        <Link href={`/escalas/${e.id}`}>
-                          <ExternalLink className="w-3.5 h-3.5" /> Ver
-                        </Link>
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        {e.status === "rascunho" && (
+                          <Button asChild variant="outline" size="sm" className="h-8 gap-1.5 text-xs border-amber-300 text-amber-700 hover:bg-amber-50 hover:text-amber-800">
+                            <Link href={`/escalas/nova?draftId=${e.id}`}>
+                              <Pencil className="w-3.5 h-3.5" /> Editar
+                            </Link>
+                          </Button>
+                        )}
+                        <Button asChild variant="ghost" size="sm" className="gap-1.5 text-xs text-muted-foreground hover:text-foreground">
+                          <Link href={`/escalas/${e.id}`}>
+                            <ExternalLink className="w-3.5 h-3.5" /> Ver
+                          </Link>
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>

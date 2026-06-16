@@ -1,5 +1,5 @@
-import { useState, useMemo, useCallback, useRef } from "react";
-import { useLocation } from "wouter";
+import { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import { useLocation, useSearch } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -226,7 +226,15 @@ function MiniCalendar({
 // ─── Componente Principal ─────────────────────────────────────────────────────
 export default function EscalaWizard() {
   const [, navigate] = useLocation();
+  const search = useSearch();
   const { user } = useAuth();
+
+  // ── draftId da URL (?draftId=42) ──
+  const draftIdFromUrl = useMemo(() => {
+    const p = new URLSearchParams(search);
+    const v = p.get("draftId");
+    return v ? Number(v) : null;
+  }, [search]);
 
   // ── Janela de lançamento ──
   const launchWindow = getLaunchWindow();
@@ -275,6 +283,67 @@ export default function EscalaWizard() {
     () => customHolidaysData.map((h: { date: string }) => h.date),
     [customHolidaysData]
   );
+
+  // ── Carregar rascunho pelo draftId da URL ──
+  const { data: draftFromUrl } = trpc.escalas.getById.useQuery(
+    { id: draftIdFromUrl! },
+    { enabled: !!draftIdFromUrl }
+  );
+
+  // Quando o rascunho carregar, popular o estado do wizard
+  const draftLoadedRef = useRef(false);
+  useEffect(() => {
+    if (!draftFromUrl || draftLoadedRef.current) return;
+    draftLoadedRef.current = true;
+
+    // Popular campos de configuração
+    setTipoEscala(draftFromUrl.tipoEscala ?? "");
+    setGlobalStartTime(draftFromUrl.startTime ?? "13:00");
+    setGlobalEndTime(draftFromUrl.endTime ?? "17:00");
+    setFuncao(draftFromUrl.funcao ?? "");
+    setDepartment(draftFromUrl.department ?? "");
+    setJustificativa(draftFromUrl.justificativa ?? "");
+
+    // Reconstruir militares a partir dos items salvos
+    if (draftFromUrl.items && draftFromUrl.items.length > 0) {
+      // Agrupar items por matricula
+      const byMatricula = new Map<string, typeof draftFromUrl.items>();
+      for (const item of draftFromUrl.items) {
+        const key = item.matricula;
+        if (!byMatricula.has(key)) byMatricula.set(key, []);
+        byMatricula.get(key)!.push(item);
+      }
+
+      const newMilitares: MilitarEntry[] = Array.from(byMatricula.entries()).map(([matricula, items], idx) => {
+        const first = items[0];
+        // Extrair dias do mês a partir das datas ISO (YYYY-MM-DD)
+        const selectedDays = new Set<number>(items.map(it => {
+          const d = new Date(it.date + "T12:00:00");
+          return d.getDate();
+        }));
+        // Overrides por dia (horários individuais)
+        const dayOverrides: Record<number, { startTime: string; endTime: string }> = {};
+        for (const it of items) {
+          const day = new Date(it.date + "T12:00:00").getDate();
+          if (it.startTime !== draftFromUrl.startTime || it.endTime !== draftFromUrl.endTime) {
+            dayOverrides[day] = { startTime: it.startTime, endTime: it.endTime };
+          }
+        }
+        return {
+          id: String(idx + 1),
+          matricula,
+          nome: first.nomeServidor ?? "",
+          posto: first.posto ?? "",
+          searchQuery: "",
+          showSuggestions: false,
+          selectedDays,
+          dayOverrides,
+        };
+      });
+
+      if (newMilitares.length > 0) setMilitares(newMilitares);
+    }
+  }, [draftFromUrl]);
 
   // Autocomplete — busca para o militar atual
   const currentMilitar = militares[currentMilitarIdx];
