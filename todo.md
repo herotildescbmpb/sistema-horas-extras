@@ -280,5 +280,5 @@
 - [x] Tela `BravoSync.tsx` com painel de controle, histórico de execuções e lançamentos por mês
 - [x] Link "Bravo Sync" na sidebar (admin only)
 - [x] Credenciais BRAVO_EMAIL, BRAVO_PASSWORD, BRAVO_HOMOLOGADOR_ID configuradas
-- [ ] Deploy do site (necessário para ativar o agendamento automático)
-- [ ] Criar heartbeat cron via CLI após o deploy
+- [x] Deploy do site (necessário para ativar o agendamento automático)
+- [x] Criar heartbeat cron via CLI após o deploy — task_uid: bh5Bpw3cqRPRexZyK7viFv (00:01 BRT diário)

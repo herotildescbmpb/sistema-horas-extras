@@ -189,11 +189,15 @@ async function marcarLancamento(
 
 async function loginBravo(page: Page): Promise<boolean> {
   try {
-    await page.goto(BRAVO_URL, { waitUntil: "networkidle", timeout: 30000 });
-    await page.fill('input[type="email"], input[name="email"]', BRAVO_EMAIL);
-    await page.fill('input[type="password"], input[name="senha"]', BRAVO_SENHA);
-    await page.click('button[type="submit"], input[type="submit"], .btn-primary');
-    await page.waitForURL(/main/, { timeout: 15000 });
+    await page.goto(BRAVO_URL, { waitUntil: "domcontentloaded", timeout: 30000 });
+    // Aguardar o campo de e-mail aparecer (id="email_usuario", type="text")
+    await page.waitForSelector('#email_usuario', { timeout: 15000 });
+    await page.fill('#email_usuario', BRAVO_EMAIL);
+    await page.fill('#senha_usuario', BRAVO_SENHA);
+    // Clicar no botão Conectar-se
+    await page.click('button:has-text("Conectar-se"), button[type="submit"]');
+    // Aguardar redirecionamento para a tela principal
+    await page.waitForURL(/main/, { timeout: 20000 });
     return true;
   } catch (e) {
     console.error("[BravoAgent] Erro no login:", e);

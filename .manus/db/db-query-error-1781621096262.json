@@ -1,0 +1,8 @@
+{
+  "query": "INSERT INTO bravo_sync_logs (mes_ano, tipo, status, total, sucesso, erros, duplicatas, iniciado_em, finalizado_em, duracao_ms, mensagem)\nVALUES ('config', 'config', 'success', 0, 0, 0, 0, NOW(), NOW(), 0, 'Heartbeat cron criado: task_uid=bh5Bpw3cqRPRexZyK7viFv | cron=0 1 3 * * * | próxima execução: 2026-06-17T03:01:00Z');",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4XMYXLTg6g9ZctA.83aa4a08e73e --database cDx3jwjHrzRKbmDZmbrJYX --execute INSERT INTO bravo_sync_logs (mes_ano, tipo, status, total, sucesso, erros, duplicatas, iniciado_em, finalizado_em, duracao_ms, mensagem)\nVALUES ('config', 'config', 'success', 0, 0, 0, 0, NOW(), NOW(), 0, 'Heartbeat cron criado: task_uid=bh5Bpw3cqRPRexZyK7viFv | cron=0 1 3 * * * | próxima execução: 2026-06-17T03:01:00Z');",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 1: Unknown column 'mes_ano' in 'field list'"
+  ]
+}
