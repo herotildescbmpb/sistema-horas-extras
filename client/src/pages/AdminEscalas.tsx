@@ -368,10 +368,7 @@ export default function AdminEscalas() {
               <tr>
                 <th className="w-10 px-4 py-2 pr-0">
                   <Checkbox
-                    checked={allSelected}
-                    ref={(el) => {
-                      if (el) (el as unknown as HTMLInputElement).indeterminate = someSelected;
-                    }}
+                    checked={allSelected ? true : someSelected ? "indeterminate" : false}
                     onCheckedChange={toggleAll}
                     aria-label="Selecionar todos"
                     className="translate-y-[1px]"
