@@ -76,6 +76,7 @@ import {
   deleteCustomHoliday,
   getAllOvertimeRecordsPaginated,
   adminUpdateOvertimeRecord,
+  deleteManyOvertimeRecords,
 } from "./db";
 import { sendPasswordResetEmail, sendWelcomeEmail } from "./_core/email";
 
@@ -600,6 +601,12 @@ export const appRouter = router({
           }
         }
         return adminUpdateOvertimeRecord(id, data);
+      }),
+
+    deleteMany: adminProcedure
+      .input(z.object({ ids: z.array(z.number()).min(1) }))
+      .mutation(async ({ input }) => {
+        return deleteManyOvertimeRecords(input.ids);
       }),
 
     // Admin: listagem paginada com busca

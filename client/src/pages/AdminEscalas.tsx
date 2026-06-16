@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -29,7 +30,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Pencil, Trash2, Search, Filter, CheckCircle, XCircle, Clock } from "lucide-react";
+import {
+  Pencil,
+  Trash2,
+  Search,
+  Filter,
+  CheckCircle,
+  XCircle,
+  Clock,
+  CheckSquare,
+  Loader2,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 
 const STATUS_LABELS: Record<string, string> = {
@@ -90,11 +102,16 @@ export default function AdminEscalas() {
   const [page, setPage] = useState(1);
   const pageSize = 30;
 
+  // Seleção múltipla
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
+
   const [editRecord, setEditRecord] = useState<OvertimeRecord | null>(null);
   const [editForm, setEditForm] = useState<Partial<OvertimeRecord & { reviewNote: string }>>({});
   const [deleteId, setDeleteId] = useState<number | null>(null);
 
   const { data: departments = [] } = trpc.departments.list.useQuery();
+  const utils = trpc.useUtils();
 
   const { data, refetch, isLoading } = trpc.overtime.listPaginated.useQuery({
     startDate,
@@ -109,6 +126,39 @@ export default function AdminEscalas() {
   const records: OvertimeRecord[] = (data?.records ?? []) as OvertimeRecord[];
   const totalCount = data?.totalCount ?? 0;
   const totalPages = Math.ceil(totalCount / pageSize);
+
+  // Helpers de seleção
+  const pageIds = records.map((r) => r.id);
+  const allSelected = pageIds.length > 0 && pageIds.every((id) => selectedIds.has(id));
+  const someSelected = pageIds.some((id) => selectedIds.has(id)) && !allSelected;
+
+  function toggleAll() {
+    if (allSelected) {
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        pageIds.forEach((id) => next.delete(id));
+        return next;
+      });
+    } else {
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        pageIds.forEach((id) => next.add(id));
+        return next;
+      });
+    }
+  }
+
+  function toggleOne(id: number) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
+
+  function clearSelection() {
+    setSelectedIds(new Set());
+  }
 
   const adminUpdateMutation = trpc.overtime.adminUpdate.useMutation({
     onSuccess: () => {
@@ -126,6 +176,17 @@ export default function AdminEscalas() {
       refetch();
     },
     onError: (e) => toast.error("Erro ao excluir registro", { description: e.message }),
+  });
+
+  const deleteManyMutation = trpc.overtime.deleteMany.useMutation({
+    onSuccess: () => {
+      const count = selectedIds.size;
+      toast.success(`${count} registro${count !== 1 ? "s" : ""} excluído${count !== 1 ? "s" : ""} com sucesso.`);
+      setSelectedIds(new Set());
+      setConfirmBulkDelete(false);
+      utils.overtime.listPaginated.invalidate();
+    },
+    onError: (err) => toast.error(err.message || "Erro ao excluir registros."),
   });
 
   const reviewMutation = trpc.overtime.review.useMutation({
@@ -203,7 +264,7 @@ export default function AdminEscalas() {
                 <Input
                   type="date"
                   value={startDate}
-                  onChange={(e) => { setStartDate(e.target.value); setPage(1); }}
+                  onChange={(e) => { setStartDate(e.target.value); setPage(1); clearSelection(); }}
                   className="h-8 text-sm w-36"
                 />
               </div>
@@ -212,14 +273,14 @@ export default function AdminEscalas() {
                 <Input
                   type="date"
                   value={endDate}
-                  onChange={(e) => { setEndDate(e.target.value); setPage(1); }}
+                  onChange={(e) => { setEndDate(e.target.value); setPage(1); clearSelection(); }}
                   className="h-8 text-sm w-36"
                 />
               </div>
             </div>
             <div>
               <Label className="text-xs">Status</Label>
-              <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
+              <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); clearSelection(); }}>
                 <SelectTrigger className="h-8 text-sm w-36">
                   <SelectValue />
                 </SelectTrigger>
@@ -233,7 +294,7 @@ export default function AdminEscalas() {
             </div>
             <div>
               <Label className="text-xs">Setor</Label>
-              <Select value={departmentFilter} onValueChange={(v) => { setDepartmentFilter(v); setPage(1); }}>
+              <Select value={departmentFilter} onValueChange={(v) => { setDepartmentFilter(v); setPage(1); clearSelection(); }}>
                 <SelectTrigger className="h-8 text-sm w-44">
                   <SelectValue />
                 </SelectTrigger>
@@ -252,7 +313,7 @@ export default function AdminEscalas() {
                 <Input
                   placeholder="Nome, matrícula..."
                   value={search}
-                  onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+                  onChange={(e) => { setSearch(e.target.value); setPage(1); clearSelection(); }}
                   className="h-8 text-sm pl-7"
                 />
               </div>
@@ -261,12 +322,61 @@ export default function AdminEscalas() {
         </CardContent>
       </Card>
 
+      {/* Barra de ações flutuante (aparece quando há seleção) */}
+      {selectedIds.size > 0 && (
+        <div className="flex items-center justify-between gap-3 px-4 py-2.5
+                        bg-primary/5 border border-primary/20 rounded-lg
+                        animate-in slide-in-from-top-1 duration-150">
+          <div className="flex items-center gap-2 text-sm text-foreground">
+            <CheckSquare className="w-4 h-4 text-primary" />
+            <span>
+              <strong>{selectedIds.size}</strong> registro{selectedIds.size !== 1 ? "s" : ""} selecionado{selectedIds.size !== 1 ? "s" : ""}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 text-xs gap-1.5"
+              onClick={clearSelection}
+            >
+              <X className="w-3.5 h-3.5" />
+              Limpar seleção
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              className="h-8 text-xs gap-1.5"
+              onClick={() => setConfirmBulkDelete(true)}
+              disabled={deleteManyMutation.isPending}
+            >
+              {deleteManyMutation.isPending
+                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                : <Trash2 className="w-3.5 h-3.5" />
+              }
+              Excluir selecionados
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Tabela */}
       <div className="rounded-lg border overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-muted/50">
               <tr>
+                <th className="w-10 px-4 py-2 pr-0">
+                  <Checkbox
+                    checked={allSelected}
+                    ref={(el) => {
+                      if (el) (el as unknown as HTMLInputElement).indeterminate = someSelected;
+                    }}
+                    onCheckedChange={toggleAll}
+                    aria-label="Selecionar todos"
+                    className="translate-y-[1px]"
+                  />
+                </th>
                 <th className="text-left px-4 py-2 font-medium">Servidor</th>
                 <th className="text-left px-4 py-2 font-medium">Data</th>
                 <th className="text-left px-4 py-2 font-medium">Horário</th>
@@ -280,19 +390,34 @@ export default function AdminEscalas() {
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={8} className="text-center py-8 text-muted-foreground">
+                  <td colSpan={9} className="text-center py-8 text-muted-foreground">
                     Carregando...
                   </td>
                 </tr>
               ) : records.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="text-center py-8 text-muted-foreground">
-                    Nenhum registro encontrado.
+                  <td colSpan={9} className="text-center py-8 text-muted-foreground">
+                    Nenhum registro encontrado para os filtros selecionados.
                   </td>
                 </tr>
               ) : (
                 records.map((r) => (
-                  <tr key={r.id} className="border-t hover:bg-muted/30 transition-colors">
+                  <tr
+                    key={r.id}
+                    className={`border-t transition-colors ${
+                      selectedIds.has(r.id)
+                        ? "bg-primary/5 dark:bg-primary/10"
+                        : "hover:bg-muted/30"
+                    }`}
+                  >
+                    <td className="w-10 px-4 py-2 pr-0">
+                      <Checkbox
+                        checked={selectedIds.has(r.id)}
+                        onCheckedChange={() => toggleOne(r.id)}
+                        aria-label={`Selecionar registro ${r.id}`}
+                        className="translate-y-[1px]"
+                      />
+                    </td>
                     <td className="px-4 py-2">
                       <p className="font-medium">{r.nomeServidor ?? r.servidor ?? "-"}</p>
                       <p className="text-xs text-muted-foreground">{r.servidor}</p>
@@ -390,10 +515,10 @@ export default function AdminEscalas() {
             Página {page} de {totalPages} ({totalCount} registros)
           </span>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
+            <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => { setPage((p) => p - 1); clearSelection(); }}>
               ‹ Anterior
             </Button>
-            <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
+            <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => { setPage((p) => p + 1); clearSelection(); }}>
               Próxima ›
             </Button>
           </div>
@@ -490,7 +615,7 @@ export default function AdminEscalas() {
         </DialogContent>
       </Dialog>
 
-      {/* Confirmar exclusão */}
+      {/* Confirmar exclusão individual */}
       <AlertDialog open={deleteId !== null} onOpenChange={(o) => !o && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -506,6 +631,34 @@ export default function AdminEscalas() {
               onClick={() => deleteId !== null && deleteMutation.mutate({ id: deleteId })}
             >
               Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirmar exclusão em lote */}
+      <AlertDialog open={confirmBulkDelete} onOpenChange={setConfirmBulkDelete}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Trash2 className="w-5 h-5 text-destructive" />
+              Excluir {selectedIds.size} registro{selectedIds.size !== 1 ? "s" : ""}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação é <strong>irreversível</strong>. Os {selectedIds.size} registro{selectedIds.size !== 1 ? "s" : ""} selecionado{selectedIds.size !== 1 ? "s" : ""} ser{selectedIds.size !== 1 ? "ão" : "á"} permanentemente removido{selectedIds.size !== 1 ? "s" : ""} do sistema.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteManyMutation.isPending}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 gap-2"
+              disabled={deleteManyMutation.isPending}
+              onClick={() => deleteManyMutation.mutate({ ids: Array.from(selectedIds) })}
+            >
+              {deleteManyMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+              Confirmar exclusão
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

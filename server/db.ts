@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, gte, isNull, like, lte, or, sql } from "drizzle-orm";
+import { and, desc, eq, gt, gte, inArray, isNull, like, lte, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   customHolidays,
@@ -1325,4 +1325,10 @@ export async function adminUpdateOvertimeRecord(
   if (Object.keys(updateData).length > 0) {
     await db.update(overtimeRecords).set(updateData).where(eq(overtimeRecords.id, id));
   }
+}
+
+export async function deleteManyOvertimeRecords(ids: number[]) {
+  const db = await getDb();
+  if (!db) return;
+  return db.delete(overtimeRecords).where(inArray(overtimeRecords.id, ids));
 }
