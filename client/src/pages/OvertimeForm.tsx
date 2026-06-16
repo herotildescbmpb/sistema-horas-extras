@@ -1,5 +1,5 @@
 import { trpc } from "@/lib/trpc";
-import { getStartSlots, getEndSlots } from "@/lib/timeSlots";
+import { SLOTS_WEEKDAY, SLOTS_EXTENDED } from "@/lib/timeSlots";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -309,7 +309,7 @@ export default function OvertimeForm() {
   const autocompleteRef = useRef<HTMLDivElement>(null);
 
   const {
-    register, handleSubmit, control, watch, setValue, reset, getValues,
+    register, handleSubmit, control, watch, setValue, reset,
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -333,38 +333,50 @@ export default function OvertimeForm() {
   const qYear = dateObj?.getFullYear() ?? new Date().getFullYear();
   const qMonth = dateObj ? dateObj.getMonth() + 1 : new Date().getMonth() + 1;
 
-  // Slots de horário dinâmicos baseados no dayType da data selecionada
-  const { data: customHolidays = [] } = trpc.holidays.list.useQuery(
+  // ─── Lógica de slots — sem dependência de array instável ──────────────────────
+  // dayCategory é uma string estável derivada apenas da data (sem arrays externos)
+  const dayCategory: "extended" | "weekday" = useMemo(() => {
+    const date = parseDateBR(watchDate ?? "");
+    if (!date) return "weekday";
+    const dow = date.getDay();
+    if (dow === 0 || dow === 6) return "extended";
+    if (isBrazilianHoliday(date)) return "extended";
+    return "weekday";
+  }, [watchDate]); // ← APENAS watchDate, sem arrays externos
+
+  // activeSlots aponta para constantes de módulo — mesma referência sempre
+  const activeSlots = dayCategory === "extended" ? SLOTS_EXTENDED : SLOTS_WEEKDAY;
+
+  // Feriados customizados — usados APENAS para o calendário visual e label informativo
+  // NÃO usados em useEffect de slots/modalidade para evitar loop
+  const { data: customHolidaysData } = trpc.holidays.list.useQuery(
     { year: qYear },
-    { enabled: !!watchDate }
+    { staleTime: Infinity, refetchOnWindowFocus: false }
   );
-
   const customHolidayDates = useMemo(
-    () => customHolidays.map((h: { date: string }) => h.date),
-    [customHolidays]
+    () => customHolidaysData?.map((h: { date: string }) => h.date) ?? [],
+    [customHolidaysData]
   );
-  const activeDayType = useMemo(() => {
-    if (!watchDate?.match(/^\d{2}\/\d{2}\/\d{4}$/)) return "weekday" as const;
-    const iso = toISO(watchDate);
-    const dow = new Date(iso + "T12:00:00").getDay();
-    if (customHolidayDates.includes(iso)) return "sunday_holiday" as const;
-    if (dow === 0 || isBrazilianHoliday(parseDateBR(watchDate)!)) return "sunday_holiday" as const;
-    if (dow === 6) return "saturday" as const;
-    return "weekday" as const;
-  }, [watchDate, customHolidayDates]);
-  const startSlots = useMemo(() => getStartSlots(activeDayType), [activeDayType]);
-  const endSlots = useMemo(() => getEndSlots(activeDayType), [activeDayType]);
 
-  // Auto-set modalidade + reset hora inválida when date changes
+  // Auto-preenche modalidade quando a data muda — shouldValidate: false evita cascata
   useEffect(() => {
-    if (watchDate?.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
-      setValue("modalidade", getModalidade(watchDate, customHolidays), { shouldValidate: true });
-      const currentStart = getValues("startTime");
-      const currentEnd   = getValues("endTime");
-      if (currentStart && !startSlots.includes(currentStart)) setValue("startTime", "");
-      if (currentEnd   && !endSlots.includes(currentEnd))     setValue("endTime",   "");
+    if (!watchDate?.match(/^\d{2}\/\d{2}\/\d{4}$/)) return;
+    const newModalidade = dayCategory === "extended" ? "Especial" : "Extraordinário";
+    setValue("modalidade", newModalidade, { shouldValidate: false });
+  }, [watchDate, dayCategory, setValue]);
+  // ↑ dayCategory é string ("extended"|"weekday") — referência sempre estável
+
+  // Limpa horários inválidos quando o tipo de dia muda (ex: sáb→seg com 09:00 selecionado)
+  useEffect(() => {
+    if (watchStart && !activeSlots.includes(watchStart as string)) {
+      setValue("startTime", "", { shouldValidate: false });
     }
-  }, [watchDate, customHolidays, startSlots, endSlots, setValue, getValues]);
+    if (watchEnd && !activeSlots.includes(watchEnd as string)) {
+      setValue("endTime", "", { shouldValidate: false });
+    }
+    // Não incluir watchStart/watchEnd nas deps — causaria loop ao fazer setValue("")
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dayCategory]); // ← APENAS dayCategory (string estável)
 
   const { data: monthSummary } = trpc.reports.monthSummary.useQuery(
     { year: qYear, month: qMonth },
@@ -762,7 +774,7 @@ export default function OvertimeForm() {
                           <SelectValue placeholder="[HH:MM]" />
                         </SelectTrigger>
                         <SelectContent className="max-h-56">
-                          {startSlots.map((t: string) => (
+                          {activeSlots.map((t: string) => (
                             <SelectItem key={t} value={t}>{t}</SelectItem>
                           ))}
                         </SelectContent>
@@ -782,7 +794,7 @@ export default function OvertimeForm() {
                           <SelectValue placeholder="[HH:MM]" />
                         </SelectTrigger>
                         <SelectContent className="max-h-56">
-                          {endSlots.map((t: string) => (
+                          {activeSlots.map((t: string) => (
                             <SelectItem key={t} value={t}>{t}</SelectItem>
                           ))}
                         </SelectContent>
@@ -796,7 +808,7 @@ export default function OvertimeForm() {
               {/* Label dinâmico de faixa de horário */}
               {watchDate?.match(/^\d{2}\/\d{2}\/\d{4}$/) && (
                 <p className="text-xs text-muted-foreground -mt-1">
-                  {activeDayType !== "weekday"
+                  {dayCategory === "extended"
                     ? "⏰ Sábado, domingo ou feriado — horários disponíveis: 07:30 a 23:50"
                     : "⏰ Dia útil — horários disponíveis: 13:00 a 23:50"}
                 </p>

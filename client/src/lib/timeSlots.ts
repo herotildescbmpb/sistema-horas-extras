@@ -1,44 +1,45 @@
 /**
  * Utilitário de slots de horário para o formulário de horas extras.
  *
- * Dias úteis (weekday): 07:00 – 22:00 em intervalos de 30 min
- * Sábados, domingos e feriados: 07:00 – 23:30 em intervalos de 30 min
+ * Dias úteis (weekday): 13:00 – 23:50 em intervalos de 10 min
+ * Sábados, domingos e feriados: 07:30 – 23:50 em intervalos de 10 min
+ *
+ * SLOTS_WEEKDAY e SLOTS_EXTENDED são constantes de módulo (referência estável)
+ * para uso em useMemo/useEffect sem causar re-renders infinitos.
  */
 
 export type DayType = "weekday" | "saturday" | "sunday_holiday";
 
-function generateSlots(startHour: number, endHour: number, stepMin = 30): string[] {
+function generateSlots(startH: number, startM: number, endH: number, endM: number, stepMin = 10): string[] {
   const slots: string[] = [];
-  for (let h = startHour; h <= endHour; h++) {
-    for (let m = 0; m < 60; m += stepMin) {
-      if (h === endHour && m > 0) break;
-      slots.push(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
-    }
+  let h = startH, m = startM;
+  while (h < endH || (h === endH && m <= endM)) {
+    slots.push(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
+    m += stepMin;
+    if (m >= 60) { h += Math.floor(m / 60); m = m % 60; }
   }
   return slots;
 }
 
-/** Slots de início: 07:00 até 22:00 (dias úteis) ou 07:00 até 23:30 (outros) */
-export function getStartSlots(dayType: DayType): string[] {
-  if (dayType === "weekday") return generateSlots(7, 22);
-  return generateSlots(7, 23, 30).filter((s) => s !== "23:30");
+/** Slots para dias úteis: 13:00 – 23:50 (10 min) — referência de módulo estável */
+export const SLOTS_WEEKDAY: readonly string[] = generateSlots(13, 0, 23, 50);
+
+/** Slots para sáb/dom/feriado: 07:30 – 23:50 (10 min) — referência de módulo estável */
+export const SLOTS_EXTENDED: readonly string[] = generateSlots(7, 30, 23, 50);
+
+/** Slots de início por tipo de dia */
+export function getStartSlots(dayType: DayType): readonly string[] {
+  return dayType === "weekday" ? SLOTS_WEEKDAY : SLOTS_EXTENDED;
 }
 
-/** Slots de fim: 07:30 até 23:00 (dias úteis) ou 07:30 até 23:50 (outros) */
-export function getEndSlots(dayType: DayType): string[] {
-  if (dayType === "weekday") {
-    return generateSlots(7, 23).filter((s) => s !== "07:00");
-  }
-  // Para sábados/domingos/feriados: até 23:50
-  const slots = generateSlots(7, 23, 30).filter((s) => s !== "07:00");
-  // Adicionar 23:50 manualmente
-  slots.push("23:50");
-  return slots;
+/** Slots de fim por tipo de dia */
+export function getEndSlots(dayType: DayType): readonly string[] {
+  return dayType === "weekday" ? SLOTS_WEEKDAY : SLOTS_EXTENDED;
 }
 
-/** Verifica se uma data é feriado nacional fixo (BR) */
+/** Verifica se uma data (ISO YYYY-MM-DD) é feriado nacional fixo (BR) */
 export function isNationalHoliday(dateStr: string): boolean {
-  const [year, month, day] = dateStr.split("-").map(Number);
+  const [, month, day] = dateStr.split("-").map(Number);
   const mmdd = `${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
   const fixedHolidays = [
     "01-01", // Ano Novo
