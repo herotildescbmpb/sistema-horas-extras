@@ -77,6 +77,7 @@ import {
   getAllOvertimeRecordsPaginated,
   adminUpdateOvertimeRecord,
   deleteManyOvertimeRecords,
+  deleteEscalaDraft,
 } from "./db";
 import { sendPasswordResetEmail, sendWelcomeEmail } from "./_core/email";
 
@@ -963,6 +964,21 @@ export const appRouter = router({
         }
         const result = await duplicateEscala(input.id, ctx.user.id);
         return result;
+      }),
+
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const escala = await getEscalaById(input.id);
+        if (!escala) throw new TRPCError({ code: "NOT_FOUND" });
+        if (escala.userId !== ctx.user.id && ctx.user.role !== "admin") {
+          throw new TRPCError({ code: "FORBIDDEN" });
+        }
+        if (escala.status !== "rascunho") {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Apenas rascunhos podem ser excluídos." });
+        }
+        await deleteEscalaDraft(input.id);
+        return { success: true };
       }),
    }),
 

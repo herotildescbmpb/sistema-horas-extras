@@ -8,11 +8,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+  DialogDescription, DialogFooter,
+} from "@/components/ui/dialog";
 import { StatusBadge, DayTypeBadge } from "@/components/StatusBadge";
 import {
   Building2, CalendarRange, Clock, ExternalLink, Filter,
-  Users, FileText, AlertCircle, Pencil,
+  Users, FileText, AlertCircle, Pencil, Trash2,
 } from "lucide-react";
+import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { getLaunchWindow } from "@shared/launchWindow";
@@ -52,7 +57,22 @@ export default function MeuSetor() {
   const [anoFilter, setAnoFilter] = useState(String(launchWindow.anoRef));
   const [statusFilter, setStatusFilter] = useState("all");
 
+  // Estado do modal de confirmação de exclusão
+  const [deleteTarget, setDeleteTarget] = useState<{ id: number; label: string } | null>(null);
+
   const { data: dept, isLoading: loadingDept } = trpc.chefe.myDepartment.useQuery();
+
+  const utils = trpc.useUtils();
+  const deleteEscala = trpc.escalas.delete.useMutation({
+    onSuccess: () => {
+      toast.success("Rascunho excluído com sucesso.");
+      setDeleteTarget(null);
+      utils.chefe.listEscalas.invalidate();
+    },
+    onError: (err) => {
+      toast.error(err.message ?? "Erro ao excluir rascunho.");
+    },
+  });
 
   const mesNum = mesFilter && mesFilter !== "all" ? Number(mesFilter) : undefined;
   const anoNum = anoFilter ? Number(anoFilter) : undefined;
@@ -95,6 +115,7 @@ export default function MeuSetor() {
   const escalasLancadas = (escalas ?? []).filter(e => e.status === "lancado" || e.status === "aprovado").length;
 
   return (
+    <>
       <div className="p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
 
         {/* Header */}
@@ -275,11 +296,24 @@ export default function MeuSetor() {
                       </div>
                       <div className="flex items-center gap-2">
                         {e.status === "rascunho" && (
-                          <Button asChild variant="outline" size="sm" className="h-8 gap-1.5 text-xs border-amber-300 text-amber-700 hover:bg-amber-50 hover:text-amber-800">
-                            <Link href={`/escalas/nova?draftId=${e.id}`}>
-                              <Pencil className="w-3.5 h-3.5" /> Editar
-                            </Link>
-                          </Button>
+                          <>
+                            <Button asChild variant="outline" size="sm" className="h-8 gap-1.5 text-xs border-amber-300 text-amber-700 hover:bg-amber-50 hover:text-amber-800">
+                              <Link href={`/escalas/nova?draftId=${e.id}`}>
+                                <Pencil className="w-3.5 h-3.5" /> Editar
+                              </Link>
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-8 gap-1.5 text-xs border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700"
+                              onClick={() => setDeleteTarget({
+                                id: e.id,
+                                label: `${e.tipoEscala} — ${MESES[(e.mes ?? 1) - 1]}/${e.ano}`,
+                              })}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" /> Excluir
+                            </Button>
+                          </>
                         )}
                         <Button asChild variant="ghost" size="sm" className="gap-1.5 text-xs text-muted-foreground hover:text-foreground">
                           <Link href={`/escalas/${e.id}`}>
@@ -344,5 +378,42 @@ export default function MeuSetor() {
           </Card>
         )}
       </div>
+
+      {/* Modal de confirmação de exclusão */}
+      <Dialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <Trash2 className="w-5 h-5" />
+              Excluir Rascunho
+            </DialogTitle>
+            <DialogDescription className="text-sm text-muted-foreground pt-1">
+              Tem certeza que deseja excluir o rascunho{" "}
+              <span className="font-semibold text-foreground">{deleteTarget?.label}</span>?
+              <br />
+              Esta ação <span className="font-semibold text-red-600">não pode ser desfeita</span> e todos os dados do rascunho serão removidos permanentemente.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setDeleteTarget(null)}
+              disabled={deleteEscala.isPending}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              className="gap-1.5"
+              disabled={deleteEscala.isPending}
+              onClick={() => deleteTarget && deleteEscala.mutate({ id: deleteTarget.id })}
+            >
+              <Trash2 className="w-4 h-4" />
+              {deleteEscala.isPending ? "Excluindo..." : "Excluir Rascunho"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

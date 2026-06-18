@@ -1332,3 +1332,11 @@ export async function deleteManyOvertimeRecords(ids: number[]) {
   if (!db) return;
   return db.delete(overtimeRecords).where(inArray(overtimeRecords.id, ids));
 }
+
+export async function deleteEscalaDraft(id: number) {
+  const db = await getDb();
+  if (!db) return;
+  // Deletar items primeiro (sem cascade no schema)
+  await db.delete(escalaItems).where(eq(escalaItems.escalaId, id));
+  await db.delete(escalas).where(eq(escalas.id, id));
+}
