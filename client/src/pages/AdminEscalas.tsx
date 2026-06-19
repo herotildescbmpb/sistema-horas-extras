@@ -236,14 +236,18 @@ export default function AdminEscalas() {
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       {/* Cabeçalho */}
+<<<<<<< Updated upstream
       <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+=======
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+>>>>>>> Stashed changes
         <div>
           <h1 className="text-2xl font-bold">Painel de Escalas</h1>
           <p className="text-muted-foreground text-sm mt-1">
             Visualize, edite e gerencie todos os registros de horas extras.
           </p>
         </div>
-        <div className="text-right">
+        <div className="sm:text-right">
           <p className="text-sm text-muted-foreground">Total no período</p>
           <p className="text-2xl font-bold text-primary">{minutesToHours(totalHours)}</p>
           <p className="text-xs text-muted-foreground">{totalCount} registros</p>
@@ -363,7 +367,11 @@ export default function AdminEscalas() {
       {/* Tabela */}
       <div className="rounded-lg border overflow-hidden">
         <div className="overflow-x-auto">
+<<<<<<< Updated upstream
           <table className="w-full text-sm min-w-[700px]">
+=======
+          <table className="w-full text-sm min-w-[640px]">
+>>>>>>> Stashed changes
             <thead className="bg-muted/50">
               <tr>
                 <th className="w-10 px-4 py-2 pr-0">

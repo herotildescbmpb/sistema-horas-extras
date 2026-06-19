@@ -154,24 +154,30 @@ export default function EscalaDetail() {
   return (
       <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
         {/* Header */}
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/escalas")}>
-            <ChevronLeft className="w-5 h-5" />
-          </Button>
-          <div className="flex-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-xl font-bold text-foreground">{(escala as any).tipoEscala}</h1>
-              <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
-              <span className="text-muted-foreground text-sm">
-                {MESES[((escala as any).mes ?? 1) - 1]}/{(escala as any).ano}
-              </span>
-            </div>
-            <div className="flex gap-4 mt-1 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {(escala as any).startTime} – {(escala as any).endTime}</span>
-              <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> {(escala as any).department ?? "—"}</span>
+        <div className="flex flex-col sm:flex-row sm:items-start gap-3">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <Button variant="ghost" size="icon" onClick={() => navigate("/escalas")} className="flex-shrink-0">
+              <ChevronLeft className="w-5 h-5" />
+            </Button>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-xl font-bold text-foreground">{(escala as any).tipoEscala}</h1>
+                <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
+                <span className="text-muted-foreground text-sm">
+                  {MESES[((escala as any).mes ?? 1) - 1]}/{(escala as any).ano}
+                </span>
+              </div>
+              <div className="flex gap-4 mt-1 text-xs text-muted-foreground flex-wrap">
+                <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {(escala as any).startTime} – {(escala as any).endTime}</span>
+                <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> {(escala as any).department ?? "—"}</span>
+              </div>
             </div>
           </div>
+<<<<<<< Updated upstream
           <div className="flex gap-2 flex-wrap">
+=======
+          <div className="flex gap-2 flex-wrap sm:flex-nowrap">
+>>>>>>> Stashed changes
             {(escala as any).status === "rascunho" && (
               <Button
                 size="sm"

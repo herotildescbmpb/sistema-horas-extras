@@ -523,7 +523,7 @@ export default function OvertimeForm() {
     : true; // não valida enquanto não está completa
 
   return (
-      <div className="max-w-3xl mx-auto space-y-6 pb-12">
+      <div className="max-w-3xl mx-auto space-y-6 pb-12 px-4 sm:px-6 lg:px-8">
 
         {/* Header */}
         <div className="flex items-center gap-3">
@@ -579,7 +579,11 @@ export default function OvertimeForm() {
         )}
 
         {/* Duration cards */}
+<<<<<<< Updated upstream
         <div className="grid sm:grid-cols-2 gap-4">
+=======
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+>>>>>>> Stashed changes
           <Card className="border-border/60 bg-card/80">
             <CardContent className="p-4 flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
@@ -706,7 +710,11 @@ export default function OvertimeForm() {
               </div>
 
               {/* Matrícula + Posto */}
+<<<<<<< Updated upstream
               <div className="grid sm:grid-cols-2 gap-4">
+=======
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+>>>>>>> Stashed changes
                 <div>
                   <Label className="text-xs font-medium mb-1.5 block">Matrícula *</Label>
                   <Input
@@ -780,7 +788,11 @@ export default function OvertimeForm() {
               </div>
 
               {/* Hora Início / Hora Fim */}
+<<<<<<< Updated upstream
               <div className="grid sm:grid-cols-2 gap-4">
+=======
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+>>>>>>> Stashed changes
                 <div>
                   <Label className="text-xs font-medium mb-1.5 block">Hora Início *</Label>
                   <Controller
@@ -853,7 +865,11 @@ export default function OvertimeForm() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+<<<<<<< Updated upstream
               <div className="grid sm:grid-cols-2 gap-4">
+=======
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+>>>>>>> Stashed changes
                 <div>
                   <Label className="text-xs font-medium mb-1.5 block">Função *</Label>
                   <Controller
@@ -960,7 +976,11 @@ export default function OvertimeForm() {
 function DepartmentProjectFields({ control, register, errors }: any) {
   const { data: departments } = trpc.departments.list.useQuery();
   return (
+<<<<<<< Updated upstream
     <div className="grid sm:grid-cols-2 gap-4">
+=======
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+>>>>>>> Stashed changes
       <div>
         <Label className="text-xs font-medium mb-1.5 block">Setor *</Label>
         <Controller
