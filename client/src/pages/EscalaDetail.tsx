@@ -173,11 +173,7 @@ export default function EscalaDetail() {
               </div>
             </div>
           </div>
-<<<<<<< Updated upstream
-          <div className="flex gap-2 flex-wrap">
-=======
           <div className="flex gap-2 flex-wrap sm:flex-nowrap">
->>>>>>> Stashed changes
             {(escala as any).status === "rascunho" && (
               <Button
                 size="sm"
