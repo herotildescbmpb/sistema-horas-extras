@@ -759,9 +759,8 @@ export const appRouter = router({
           // Extrai apenas a parte numérica da matrícula, removendo dígito verificador (ex: "517066-4" → "517066")
           const rawServidor = rec.servidor ?? rec.userMatricula ?? "";
           const matricula = rawServidor.includes("-") ? rawServidor.split("-")[0].trim() : rawServidor.trim();
-          // Inclui nome do servidor para facilitar identificação (ex: "517066 - Joao da Silva")
-          const nomeServidor = rec.nomeServidor ?? "";
-          const servidor = nomeServidor ? `${matricula} - ${nomeServidor}` : matricula;
+          // Coluna Servidor: apenas a matrícula numérica (sem nome)
+          const servidor = matricula;
 
           const dataInicio = r.date.split("-").reverse().join("/");
           const horaInicio = r.startTime.length === 5 ? r.startTime + ":00" : r.startTime;
