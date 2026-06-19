@@ -236,7 +236,7 @@ export default function AdminEscalas() {
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       {/* Cabeçalho */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold">Painel de Escalas</h1>
           <p className="text-muted-foreground text-sm mt-1">
@@ -363,7 +363,7 @@ export default function AdminEscalas() {
       {/* Tabela */}
       <div className="rounded-lg border overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm min-w-[700px]">
             <thead className="bg-muted/50">
               <tr>
                 <th className="w-10 px-4 py-2 pr-0">

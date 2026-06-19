@@ -171,7 +171,7 @@ export default function EscalaDetail() {
               <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> {(escala as any).department ?? "—"}</span>
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             {(escala as any).status === "rascunho" && (
               <Button
                 size="sm"
