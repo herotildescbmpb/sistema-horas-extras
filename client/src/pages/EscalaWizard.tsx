@@ -44,6 +44,7 @@ const FUNCOES = ["Chefe", "Auxiliar Administrativo", "Diretor", "Vice-Diretor"];
 // ─── Modo CMAV ────────────────────────────────────────────────────────────────
 const CMAV_DEPARTMENT_CONTAINS = "CMAV";
 const CMAV_TIPO_ESCALA = "Escala CMAV";
+const CMAV_DEFAULT_JUSTIFICATIVA = "Escala de serviço extraordinário do CMAV – Centro de Controle e Manutenção de Viaturas, conforme necessidade operacional do setor.";
 /** Horários pré-definidos para o modo CMAV */
 const CMAV_WEEKDAY_START = "13:00";
 const CMAV_WEEKDAY_END   = "19:00";
@@ -266,6 +267,7 @@ export default function EscalaWizard() {
   const [department, setDepartment] = useState("");
   const [justificativa, setJustificativa] = useState("");
 
+
   // ── Militares ──
   const [militares, setMilitares] = useState<MilitarEntry[]>([
     {
@@ -292,6 +294,19 @@ export default function EscalaWizard() {
   // ── Queries ──
   const { data: departments_data } = trpc.departments.list.useQuery();
   const createEscala = trpc.escalas.create.useMutation();
+
+  // ── Pré-preencher setor, tipo e justificativa para usuários CMAV ──
+  useEffect(() => {
+    if (!isCmavUser || !departments_data) return;
+    const cmavDept = (departments_data as any[]).find((d: any) =>
+      d.name.includes(CMAV_DEPARTMENT_CONTAINS)
+    );
+    if (cmavDept) {
+      setDepartment(prev => prev || cmavDept.name);
+    }
+    setJustificativa(prev => prev || CMAV_DEFAULT_JUSTIFICATIVA);
+    if (!tipoEscala) setTipoEscala(CMAV_TIPO_ESCALA);
+  }, [isCmavUser, departments_data]);
   const launchEscala = trpc.escalas.launch.useMutation();
   const { data: customHolidaysData = [] } = trpc.holidays.list.useQuery({ year: ano });
   const customHolidayISO = useMemo(
