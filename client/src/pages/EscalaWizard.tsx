@@ -43,7 +43,7 @@ const TIPOS_ESCALA = [
 const FUNCOES = ["Chefe", "Auxiliar Administrativo", "Diretor", "Vice-Diretor"];
 // ─── Modo CMAV ────────────────────────────────────────────────────────────────
 const CMAV_DEPARTMENT_CONTAINS = "CMAV";
-const CMAV_TIPO_ESCALA = "Expediente CMAV";
+const CMAV_TIPO_ESCALA = "Escala CMAV";
 /** Horários pré-definidos para o modo CMAV */
 const CMAV_WEEKDAY_START = "13:00";
 const CMAV_WEEKDAY_END   = "19:00";
@@ -759,11 +759,10 @@ export default function EscalaWizard() {
                   <Select value={tipoEscala} onValueChange={setTipoEscala}>
                     <SelectTrigger><SelectValue placeholder="Selecione o tipo" /></SelectTrigger>
                     <SelectContent>
-                      {TIPOS_ESCALA.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                      {isCmavUser && (
-                        <SelectItem value={CMAV_TIPO_ESCALA}>
-                          {CMAV_TIPO_ESCALA} ⭐
-                        </SelectItem>
+                      {isCmavUser ? (
+                        <SelectItem value={CMAV_TIPO_ESCALA}>{CMAV_TIPO_ESCALA}</SelectItem>
+                      ) : (
+                        TIPOS_ESCALA.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)
                       )}
                     </SelectContent>
                   </Select>
