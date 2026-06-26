@@ -124,6 +124,8 @@ function generateTimeOptions(from = "13:00", to = "23:50", step = 10): string[] 
   return opts;
 }
 const TIME_OPTIONS = generateTimeOptions();
+/** Slots para sáb/dom/feriado: 07:30 – 23:50 */
+const TIME_OPTIONS_EXTENDED = generateTimeOptions("07:30", "23:50");
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 interface MilitarEntry {
@@ -971,6 +973,8 @@ export default function EscalaWizard() {
                           const date = getDayDate(day);
                           const dow = date.getDay();
                           const isFer = isFeriado(date, customHolidayISO);
+                          const isSpecial = dow === 0 || dow === 6 || isFer;
+                          const daySlots = isSpecial ? TIME_OPTIONS_EXTENDED : TIME_OPTIONS;
                           const override = m.dayOverrides[day];
                           const st = override?.startTime ?? globalStartTime;
                           const et = override?.endTime ?? globalEndTime;
@@ -997,7 +1001,7 @@ export default function EscalaWizard() {
                                 >
                                   <SelectTrigger className="h-7 text-xs flex-1"><SelectValue /></SelectTrigger>
                                   <SelectContent className="max-h-40">
-                                    {TIME_OPTIONS.map(t => <SelectItem key={t} value={t} className="text-xs">{t}</SelectItem>)}
+                                    {daySlots.map(t => <SelectItem key={t} value={t} className="text-xs">{t}</SelectItem>)}
                                   </SelectContent>
                                 </Select>
                                 <span className="text-muted-foreground text-xs">às</span>
@@ -1007,7 +1011,7 @@ export default function EscalaWizard() {
                                 >
                                   <SelectTrigger className="h-7 text-xs flex-1"><SelectValue /></SelectTrigger>
                                   <SelectContent className="max-h-40">
-                                    {TIME_OPTIONS.map(t => <SelectItem key={t} value={t} className="text-xs">{t}</SelectItem>)}
+                                    {daySlots.map(t => <SelectItem key={t} value={t} className="text-xs">{t}</SelectItem>)}
                                   </SelectContent>
                                 </Select>
                                 <span className="text-xs font-medium text-primary whitespace-nowrap">{fmtHours(mins)}</span>
@@ -1111,6 +1115,8 @@ export default function EscalaWizard() {
                           const date = getDayDate(day);
                           const dow = date.getDay();
                           const isFer = isFeriado(date, customHolidayISO);
+                          const isSpecial = dow === 0 || dow === 6 || isFer;
+                          const daySlots = isSpecial ? TIME_OPTIONS_EXTENDED : TIME_OPTIONS;
                           const override = m.dayOverrides[day];
                           const st = override?.startTime ?? globalStartTime;
                           const et = override?.endTime ?? globalEndTime;
@@ -1134,7 +1140,7 @@ export default function EscalaWizard() {
                                   >
                                     <SelectTrigger className="h-7 w-24 text-xs"><SelectValue /></SelectTrigger>
                                     <SelectContent className="max-h-40">
-                                      {TIME_OPTIONS.map(t => <SelectItem key={t} value={t} className="text-xs">{t}</SelectItem>)}
+                                      {daySlots.map(t => <SelectItem key={t} value={t} className="text-xs">{t}</SelectItem>)}
                                     </SelectContent>
                                   </Select>
                                   <span className="text-xs text-muted-foreground">às</span>
@@ -1144,7 +1150,7 @@ export default function EscalaWizard() {
                                   >
                                     <SelectTrigger className="h-7 w-24 text-xs"><SelectValue /></SelectTrigger>
                                     <SelectContent className="max-h-40">
-                                      {TIME_OPTIONS.map(t => <SelectItem key={t} value={t} className="text-xs">{t}</SelectItem>)}
+                                      {daySlots.map(t => <SelectItem key={t} value={t} className="text-xs">{t}</SelectItem>)}
                                     </SelectContent>
                                   </Select>
                                   <Select
