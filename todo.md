@@ -307,3 +307,4 @@
 - [ ] Frontend: criar AdminFeriados.tsx com lista de feriados automáticos + tabela de feriados manuais
 - [ ] AppLayout: adicionar item "Feriados" → /admin/feriados
 - [ ] App.tsx: adicionar rota /admin/feriados
+- [x] Criar modo "Expediente CMAV" no EscalaWizard: tipo restrito ao setor CMAV, horários pré-definidos por tipo de dia (sáb/dom/feriado: 07:30–19:30; dias úteis: 13:00–19:00), interface simplificada de atribuição de militares por dia do calendário

@@ -39,7 +39,16 @@ const TIPOS_ESCALA = [
   "Expediente", "Formatura", "Instrução e Treinamento",
   "Operacional", "Prontidão", "Representação", "Sobreaviso",
 ];
+// Nota: "Expediente CMAV" é adicionado dinamicamente apenas para usuários do CMAV
 const FUNCOES = ["Chefe", "Auxiliar Administrativo", "Diretor", "Vice-Diretor"];
+// ─── Modo CMAV ────────────────────────────────────────────────────────────────
+const CMAV_DEPARTMENT_CONTAINS = "CMAV";
+const CMAV_TIPO_ESCALA = "Expediente CMAV";
+/** Horários pré-definidos para o modo CMAV */
+const CMAV_WEEKDAY_START = "13:00";
+const CMAV_WEEKDAY_END   = "19:00";
+const CMAV_SPECIAL_START = "07:30";
+const CMAV_SPECIAL_END   = "19:30";
 const MESES = [
   "Janeiro","Fevereiro","Março","Abril","Maio","Junho",
   "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro",
@@ -230,6 +239,8 @@ export default function EscalaWizard() {
   const [, navigate] = useLocation();
   const search = useSearch();
   const { user } = useAuth();
+  /** true se o usuário pertence ao CMAV */
+  const isCmavUser = !!(user?.department && user.department.includes(CMAV_DEPARTMENT_CONTAINS));
 
   // ── draftId da URL (?draftId=42) ──
   const draftIdFromUrl = useMemo(() => {
@@ -250,6 +261,8 @@ export default function EscalaWizard() {
   const [globalStartTime, setGlobalStartTime] = useState("13:00");
   const [globalEndTime, setGlobalEndTime] = useState("17:00");
   const [funcao, setFuncao] = useState("");
+  /** true quando o tipo selecionado é "Expediente CMAV" */
+  const isCmavMode = tipoEscala === CMAV_TIPO_ESCALA;
   const [department, setDepartment] = useState("");
   const [justificativa, setJustificativa] = useState("");
 
@@ -423,8 +436,14 @@ export default function EscalaWizard() {
       for (const day of Array.from(m.selectedDays).sort((a, b) => a - b)) {
         const date = getDayDate(day);
         const override = m.dayOverrides[day];
-        const st = override?.startTime ?? globalStartTime;
-        const et = override?.endTime ?? globalEndTime;
+        const isSpecialDay = (() => {
+          const dow = date.getDay();
+          return dow === 0 || dow === 6 || isFeriado(date, customHolidayISO);
+        })();
+        const cmavDefaultStart = isSpecialDay ? CMAV_SPECIAL_START : CMAV_WEEKDAY_START;
+        const cmavDefaultEnd   = isSpecialDay ? CMAV_SPECIAL_END   : CMAV_WEEKDAY_END;
+        const st = override?.startTime ?? (isCmavMode ? cmavDefaultStart : globalStartTime);
+        const et = override?.endTime   ?? (isCmavMode ? cmavDefaultEnd   : globalEndTime);
         const totalMinutes = calcMinutes(st, et);
         const dayType = (() => {
           const dow = date.getDay();
@@ -451,7 +470,8 @@ export default function EscalaWizard() {
   }, [militares, globalStartTime, globalEndTime, ano, mes, getDayDate]);
 
   // ── Validações ──
-  const canAdvanceStep1 = tipoEscala && globalStartTime && globalEndTime && funcao && department && justificativa;
+  const canAdvanceStep1 = tipoEscala && funcao && department && justificativa &&
+    (isCmavMode || (globalStartTime && globalEndTime));
   const canAdvanceMilitar = (idx: number) => {
     const m = militares[idx];
     return m && m.matricula && Array.from(m.selectedDays).length > 0;
@@ -508,7 +528,13 @@ export default function EscalaWizard() {
       const sortedDays = Array.from(m.selectedDays).sort((a, b) => a - b);
       const totalMins = sortedDays.reduce((acc, day) => {
         const ov = m.dayOverrides[day];
-        return acc + calcMinutes(ov?.startTime ?? globalStartTime, ov?.endTime ?? globalEndTime);
+        const date = getDayDate(day);
+        const dow = date.getDay();
+        const isFer = isFeriado(date, customHolidayISO);
+        const isSpecial = dow === 0 || dow === 6 || isFer;
+        const defStart = isCmavMode ? (isSpecial ? CMAV_SPECIAL_START : CMAV_WEEKDAY_START) : globalStartTime;
+        const defEnd   = isCmavMode ? (isSpecial ? CMAV_SPECIAL_END   : CMAV_WEEKDAY_END)   : globalEndTime;
+        return acc + calcMinutes(ov?.startTime ?? defStart, ov?.endTime ?? defEnd);
       }, 0);
       const cells = allDays.map(day => {
         if (!m.selectedDays.has(day)) return `<td style="background:#f5f5f5;color:#ccc;text-align:center">—</td>`;
@@ -734,6 +760,11 @@ export default function EscalaWizard() {
                     <SelectTrigger><SelectValue placeholder="Selecione o tipo" /></SelectTrigger>
                     <SelectContent>
                       {TIPOS_ESCALA.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                      {isCmavUser && (
+                        <SelectItem value={CMAV_TIPO_ESCALA}>
+                          {CMAV_TIPO_ESCALA} ⭐
+                        </SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -765,30 +796,53 @@ export default function EscalaWizard() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-1.5">
-                  <Label>Hora Início Padrão <span className="text-destructive">*</span></Label>
-                  <Select value={globalStartTime} onValueChange={setGlobalStartTime}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent className="max-h-48">
-                      {TIME_OPTIONS.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Hora Fim Padrão <span className="text-destructive">*</span></Label>
-                  <Select value={globalEndTime} onValueChange={setGlobalEndTime}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent className="max-h-48">
-                      {TIME_OPTIONS.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
+                {!isCmavMode && (
+                  <>
+                    <div className="space-y-1.5">
+                      <Label>Hora Início Padrão <span className="text-destructive">*</span></Label>
+                      <Select value={globalStartTime} onValueChange={setGlobalStartTime}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent className="max-h-48">
+                          {TIME_OPTIONS.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Hora Fim Padrão <span className="text-destructive">*</span></Label>
+                      <Select value={globalEndTime} onValueChange={setGlobalEndTime}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent className="max-h-48">
+                          {TIME_OPTIONS.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </>
+                )}
               </div>
-              {globalStartTime && globalEndTime && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/40 rounded-lg px-3 py-2">
-                  <Clock className="w-4 h-4 text-primary" />
-                  Duração padrão por dia: <strong>{fmtHours(calcMinutes(globalStartTime, globalEndTime))}</strong>
+              {isCmavMode ? (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 space-y-1.5">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-amber-800">
+                    <Clock className="w-4 h-4" /> Horários pré-definidos — Expediente CMAV
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-sm text-amber-700">
+                    <div className="bg-white/60 rounded px-3 py-1.5 border border-amber-200">
+                      <span className="text-xs text-amber-600 block">Dias úteis (Seg–Sex)</span>
+                      <strong>13:00 – 19:00</strong> · 6h
+                    </div>
+                    <div className="bg-white/60 rounded px-3 py-1.5 border border-amber-200">
+                      <span className="text-xs text-amber-600 block">Sáb / Dom / Feriado</span>
+                      <strong>07:30 – 19:30</strong> · 12h
+                    </div>
+                  </div>
+                  <p className="text-xs text-amber-600">Os horários são aplicados automaticamente. Ajustes individuais por dia ainda são possíveis.</p>
                 </div>
+              ) : (
+                globalStartTime && globalEndTime && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/40 rounded-lg px-3 py-2">
+                    <Clock className="w-4 h-4 text-primary" />
+                    Duração padrão por dia: <strong>{fmtHours(calcMinutes(globalStartTime, globalEndTime))}</strong>
+                  </div>
+                )
               )}
               <div className="space-y-1.5">
                 <Label>Justificativa <span className="text-destructive">*</span></Label>
@@ -975,9 +1029,11 @@ export default function EscalaWizard() {
                           const isFer = isFeriado(date, customHolidayISO);
                           const isSpecial = dow === 0 || dow === 6 || isFer;
                           const daySlots = isSpecial ? TIME_OPTIONS_EXTENDED : TIME_OPTIONS;
+                          const cmavDefStart = isSpecial ? CMAV_SPECIAL_START : CMAV_WEEKDAY_START;
+                          const cmavDefEnd   = isSpecial ? CMAV_SPECIAL_END   : CMAV_WEEKDAY_END;
                           const override = m.dayOverrides[day];
-                          const st = override?.startTime ?? globalStartTime;
-                          const et = override?.endTime ?? globalEndTime;
+                          const st = override?.startTime ?? (isCmavMode ? cmavDefStart : globalStartTime);
+                          const et = override?.endTime   ?? (isCmavMode ? cmavDefEnd   : globalEndTime);
                           const mins = calcMinutes(st, et);
                           const modalidade = getModalidade(date, customHolidayISO);
 
@@ -1117,9 +1173,11 @@ export default function EscalaWizard() {
                           const isFer = isFeriado(date, customHolidayISO);
                           const isSpecial = dow === 0 || dow === 6 || isFer;
                           const daySlots = isSpecial ? TIME_OPTIONS_EXTENDED : TIME_OPTIONS;
+                          const cmavDefStart = isSpecial ? CMAV_SPECIAL_START : CMAV_WEEKDAY_START;
+                          const cmavDefEnd   = isSpecial ? CMAV_SPECIAL_END   : CMAV_WEEKDAY_END;
                           const override = m.dayOverrides[day];
-                          const st = override?.startTime ?? globalStartTime;
-                          const et = override?.endTime ?? globalEndTime;
+                          const st = override?.startTime ?? (isCmavMode ? cmavDefStart : globalStartTime);
+                          const et = override?.endTime   ?? (isCmavMode ? cmavDefEnd   : globalEndTime);
                           const mins = calcMinutes(st, et);
                           const modalidade = getModalidade(date, customHolidayISO);
                           const isEditing = editingRecord?.militarId === m.id && editingRecord?.day === day;
