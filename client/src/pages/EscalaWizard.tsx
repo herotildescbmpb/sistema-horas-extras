@@ -305,7 +305,8 @@ export default function EscalaWizard() {
       setDepartment(prev => prev || cmavDept.name);
     }
     setJustificativa(prev => prev || CMAV_DEFAULT_JUSTIFICATIVA);
-    if (!tipoEscala) setTipoEscala(CMAV_TIPO_ESCALA);
+    setTipoEscala(CMAV_TIPO_ESCALA);
+    setFuncao(prev => prev || "Auxiliar Administrativo");
   }, [isCmavUser, departments_data]);
   const launchEscala = trpc.escalas.launch.useMutation();
   const { data: customHolidaysData = [] } = trpc.holidays.list.useQuery({ year: ano });
