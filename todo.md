@@ -318,3 +318,13 @@
 - [x] BravoSync.tsx: adicionar coluna "Ações" na tabela de histórico com botão "Baixar CSV" por linha
 - [x] Botão "Baixar CSV" cria Blob com csvContent e dispara download com nome bravo_lote_{id}_{data}.csv
 - [x] Exibe "Indisponível" para lotes antigos sem csvContent salvo
+
+## Ajuste do Formato CSV — Exportação Bravo Sync (v50)
+
+- [x] Atualizar geração do CSV em createExportBatch para seguir o padrão do arquivo de referência:
+  - Cabeçalho: `Tipo de Escala;Servidor;Data Início;Hora Início:;Data Final;Hora Fim:;Função;Modalidade`
+  - Data no formato DD/MM/AAAA (ex: 30/06/2026)
+  - Hora no formato HH:MM:SS (ex: 13:00:00)
+  - Campo "Data Final" igual à "Data Início" (mesmo dia)
+  - BOM UTF-8 no início do arquivo (\uFEFF)
+  - Colunas: tipoEscala, servidor, date (início), startTime, date (fim), endTime, funcao, modalidade

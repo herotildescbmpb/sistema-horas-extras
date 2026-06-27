@@ -1168,20 +1168,35 @@ export const appRouter = router({
         if (records.length === 0) {
           throw new TRPCError({ code: "NOT_FOUND", message: "Nenhum registro novo para exportar." });
         }
-        // Montar CSV no formato DAL ANTES de inserir o lote
-        const header = "Matrícula;Data;Hora Início;Hora Fim;Duração (min);Modalidade;Setor;Tipo Escala;Função";
+        // Montar CSV no padrão exato do arquivo DAL de referência
+        // Cabeçalho: Tipo de Escala;Servidor;Data Início;Hora Início:;Data Final;Hora Fim:;Função;Modalidade
+        // Data: DD/MM/AAAA | Hora: HH:MM:SS | BOM UTF-8 no início
+        const formatDateBR = (dateStr: string) => {
+          // dateStr vem como YYYY-MM-DD
+          const [y, m, d] = dateStr.split("-");
+          return `${d}/${m}/${y}`;
+        };
+        const formatTimeFull = (timeStr: string) => {
+          // timeStr pode vir como HH:MM ou HH:MM:SS
+          const parts = timeStr.split(":");
+          const h = parts[0] || "00";
+          const m = parts[1] || "00";
+          const s = parts[2] || "00";
+          return `${h}:${m}:${s}`;
+        };
+        const header = "Tipo de Escala;Servidor;Data Início;Hora Início:;Data Final;Hora Fim:;Função;Modalidade";
         const rows = records.map((r) => [
-          r.servidor || "",
-          r.date,
-          r.startTime.slice(0, 5),
-          r.endTime.slice(0, 5),
-          r.totalMinutes,
-          r.modalidade || "",
-          r.department || "",
           r.tipoEscala || "",
+          r.servidor || "",
+          formatDateBR(r.date),
+          formatTimeFull(r.startTime),
+          formatDateBR(r.date),  // Data Final = Data Início (mesmo dia)
+          formatTimeFull(r.endTime),
           r.funcao || "",
+          r.modalidade || "",
         ].join(";"));
-        const csv = [header, ...rows].join("\n");
+        // BOM UTF-8 + cabeçalho + linhas
+        const csv = "\uFEFF" + [header, ...rows].join("\n");
         // Criar lote
         const now = new Date();
         const [batchResult] = await db.insert(bravoExportBatches).values({
