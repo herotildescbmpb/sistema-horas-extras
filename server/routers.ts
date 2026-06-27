@@ -485,8 +485,8 @@ export const appRouter = router({
           }
         }
 
-        // Chefe e Admin aprovam diretamente; Auxiliar Administrativo fica pendente
-        const autoApprove = ctx.user.role === "admin" || ctx.user.role === "chefe";
+        // Admin, chefe e user aprovam diretamente; apenas auxiliar_administrativo fica pendente
+        const autoApprove = ctx.user.role !== "auxiliar_administrativo";
         const record = await createOvertimeRecord({
           userId: ctx.user.id,
           tipoEscala: input.tipoEscala,
@@ -948,8 +948,8 @@ export const appRouter = router({
         if (escala.status !== "rascunho") {
           throw new TRPCError({ code: "BAD_REQUEST", message: "Apenas rascunhos podem ser lançados." });
         }
-        // Chefe e Admin aprovam diretamente; Auxiliar Administrativo fica pendente
-        const autoApprove = ctx.user.role === "admin" || ctx.user.role === "chefe";
+        // Admin, chefe e user aprovam diretamente; apenas auxiliar_administrativo fica pendente
+        const autoApprove = ctx.user.role !== "auxiliar_administrativo";
         await launchEscala(input.id, ctx.user.id, autoApprove);
         // Notificar chefe do setor
         const dept = escala.department;
