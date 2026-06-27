@@ -5,8 +5,10 @@ import {
   bravoEscalasMes,
   bravoLancamentos,
   bravoSyncLogs,
+  bravoExportBatches,
+  overtimeRecords,
 } from "../drizzle/schema";
-import { eq, desc, sql as drizzleSql } from "drizzle-orm";
+import { eq, desc, sql as drizzleSql, isNull, and, gte, lte } from "drizzle-orm";
 import { z } from "zod";
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
@@ -1086,6 +1088,111 @@ export const appRouter = router({
           .where(eq(bravoLancamentos.bravoEscalaMesId, escalaMes[0].id))
           .orderBy(desc(bravoLancamentos.createdAt));
       }),
+
+    // ── Exportação manual para lançamento no Bravo ──────────────────────────────
+
+    // Prévia: registros aprovados ainda não exportados
+    exportPreview: adminProcedure
+      .input(z.object({
+        startDate: z.string().optional(), // YYYY-MM-DD
+        endDate: z.string().optional(),
+        department: z.string().optional(),
+      }))
+      .query(async ({ input }) => {
+        const db = await getDb();
+        if (!db) return { records: [], total: 0 };
+        const conditions = [
+          eq(overtimeRecords.status, "approved"),
+          isNull(overtimeRecords.exportedAt),
+        ];
+        if (input.startDate) conditions.push(gte(overtimeRecords.date, input.startDate));
+        if (input.endDate) conditions.push(lte(overtimeRecords.date, input.endDate));
+        if (input.department) conditions.push(eq(overtimeRecords.department, input.department));
+        const records = await db
+          .select()
+          .from(overtimeRecords)
+          .where(and(...conditions))
+          .orderBy(overtimeRecords.date, overtimeRecords.servidor);
+        return { records, total: records.length };
+      }),
+
+    // Criar lote: marca registros como exportados e retorna CSV
+    createExportBatch: adminProcedure
+      .input(z.object({
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+        department: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB indisponível" });
+        // Buscar registros não exportados
+        const conditions = [
+          eq(overtimeRecords.status, "approved"),
+          isNull(overtimeRecords.exportedAt),
+        ];
+        if (input.startDate) conditions.push(gte(overtimeRecords.date, input.startDate));
+        if (input.endDate) conditions.push(lte(overtimeRecords.date, input.endDate));
+        if (input.department) conditions.push(eq(overtimeRecords.department, input.department));
+        const records = await db
+          .select()
+          .from(overtimeRecords)
+          .where(and(...conditions))
+          .orderBy(overtimeRecords.date, overtimeRecords.servidor);
+        if (records.length === 0) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Nenhum registro novo para exportar." });
+        }
+        // Criar lote
+        const now = new Date();
+        const [batchResult] = await db.insert(bravoExportBatches).values({
+          exportedBy: ctx.user.id,
+          exportedByName: ctx.user.name || "",
+          totalRegistros: records.length,
+          startDate: input.startDate || null,
+          endDate: input.endDate || null,
+          department: input.department || null,
+        });
+        const batchId = (batchResult as any).insertId as number;
+        // Marcar registros como exportados
+        const ids = records.map((r) => r.id);
+        for (const id of ids) {
+          await db
+            .update(overtimeRecords)
+            .set({ exportedAt: now, exportBatchId: batchId })
+            .where(eq(overtimeRecords.id, id));
+        }
+        // Montar CSV no formato DAL
+        const header = "Matrícula;Data;Hora Início;Hora Fim;Duração (min);Modalidade;Setor;Tipo Escala;Função";
+        const rows = records.map((r) => [
+          r.servidor || "",
+          r.date,
+          r.startTime.slice(0, 5),
+          r.endTime.slice(0, 5),
+          r.totalMinutes,
+          r.modalidade || "",
+          r.department || "",
+          r.tipoEscala || "",
+          r.funcao || "",
+        ].join(";"));
+        const csv = [header, ...rows].join("\n");
+        return {
+          batchId,
+          totalRegistros: records.length,
+          csv,
+          exportedAt: now.toISOString(),
+        };
+      }),
+
+    // Histórico de lotes exportados
+    exportBatches: adminProcedure.query(async () => {
+      const db = await getDb();
+      if (!db) return [];
+      return db
+        .select()
+        .from(bravoExportBatches)
+        .orderBy(desc(bravoExportBatches.createdAt))
+        .limit(50);
+    }),
   }),
 });
 export type AppRouter = typeof appRouter;

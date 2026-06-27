@@ -65,6 +65,8 @@ export const overtimeRecords = mysqlTable("overtime_records", {
   reviewedBy: int("reviewedBy"),
   reviewedAt: timestamp("reviewedAt"),
   reviewNote: text("reviewNote"),
+  exportedAt: timestamp("exportedAt"),       // quando foi incluído em lote de exportação manual
+  exportBatchId: int("exportBatchId"),       // FK para bravo_export_batches
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -222,6 +224,20 @@ export const bravoSyncLogs = mysqlTable("bravo_sync_logs", {
 });
 export type BravoSyncLog = typeof bravoSyncLogs.$inferSelect;
 export type InsertBravoSyncLog = typeof bravoSyncLogs.$inferInsert;
+
+// Lotes de exportação manual para lançamento no Bravo
+export const bravoExportBatches = mysqlTable("bravo_export_batches", {
+  id: int("id").autoincrement().primaryKey(),
+  exportedBy: int("exportedBy").notNull(),           // userId de quem exportou
+  exportedByName: varchar("exportedByName", { length: 255 }),
+  totalRegistros: int("totalRegistros").default(0).notNull(),
+  startDate: varchar("startDate", { length: 10 }),   // filtro: data início
+  endDate: varchar("endDate", { length: 10 }),       // filtro: data fim
+  department: varchar("department", { length: 128 }), // filtro: setor
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type BravoExportBatch = typeof bravoExportBatches.$inferSelect;
+export type InsertBravoExportBatch = typeof bravoExportBatches.$inferInsert;
 
 // Feriados customizados cadastrados pelo administrador
 export const customHolidays = mysqlTable("custom_holidays", {
