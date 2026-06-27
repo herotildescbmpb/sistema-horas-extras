@@ -288,7 +288,7 @@ export default function Reports() {
             ) : (
               <FileText className="w-4 h-4" />
             )}
-            Exportar CSV (DAL)
+            Exportar CSV
           </Button>
           <Button
             onClick={handleExportPdf}
