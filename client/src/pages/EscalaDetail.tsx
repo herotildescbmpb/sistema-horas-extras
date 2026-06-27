@@ -29,7 +29,23 @@ export default function EscalaDetail() {
   const { data: escala, isLoading, refetch } = trpc.escalas.getById.useQuery({ id: escalaId });
   const launchMutation = trpc.escalas.launch.useMutation({
     onSuccess: () => { toast.success("Escala lançada com sucesso!"); refetch(); },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => {
+      // O erro de conflito em lote vem como texto com lista de itens
+      // Exibe mensagem completa com duração maior para o usuário ler
+      const isConflict = e.message.includes("Conflito de horário detectado");
+      if (isConflict) {
+        toast.error(e.message, {
+          duration: 15000,
+          description: "Corrija os registros conflitantes antes de lançar a escala.",
+          action: {
+            label: "Ir para Registros",
+            onClick: () => navigate("/horas"),
+          },
+        });
+      } else {
+        toast.error(e.message);
+      }
+    },
   });
 
   if (isLoading) {

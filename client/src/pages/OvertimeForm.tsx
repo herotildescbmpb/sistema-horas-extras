@@ -453,7 +453,27 @@ export default function OvertimeForm() {
       toast.success("Registro criado com sucesso!");
       navigate("/horas");
     },
-    onError: (err) => toast.error(err.message),
+    onError: (err) => {
+      // Verifica se a mensagem contém IDs de conflito embutidos
+      const parts = err.message.split("|CONFLICT_IDS:");
+      const userMessage = parts[0];
+      const conflictIds: number[] = parts[1] ? JSON.parse(parts[1]) : [];
+
+      if (conflictIds.length > 0) {
+        toast.error(userMessage, {
+          duration: 10000,
+          action: {
+            label: conflictIds.length === 1 ? "Editar Registro" : `Ver ${conflictIds.length} Registros`,
+            onClick: () => {
+              // Navega para o primeiro registro conflitante
+              navigate(`/horas/${conflictIds[0]}/editar`);
+            },
+          },
+        });
+      } else {
+        toast.error(userMessage);
+      }
+    },
   });
 
   const updateMutation = trpc.overtime.update.useMutation({

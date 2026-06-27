@@ -475,9 +475,12 @@ export const appRouter = router({
             const conflictInfo = conflicts
               .map((c) => `${c.startTime.slice(0, 5)}–${c.endTime.slice(0, 5)}`)
               .join(", ");
+            // Inclui os IDs dos registros conflitantes como JSON no final da mensagem
+            // para que o frontend possa criar links de edição
+            const conflictIds = conflicts.map((c) => c.id);
             throw new TRPCError({
               code: "CONFLICT",
-              message: `Conflito de horário: o militar já possui registro(s) nesta data com horário sobreposto (${conflictInfo}). Verifique antes de lançar.`,
+              message: `Conflito de horário: o militar já possui registro(s) nesta data com horário sobreposto (${conflictInfo}). Verifique antes de lançar.|CONFLICT_IDS:${JSON.stringify(conflictIds)}`,
             });
           }
         }
