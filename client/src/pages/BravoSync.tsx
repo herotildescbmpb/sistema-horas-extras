@@ -331,6 +331,7 @@ function ExportPanel() {
                     <TableHead>Registros</TableHead>
                     <TableHead>Período filtrado</TableHead>
                     <TableHead>Setor</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -354,6 +355,33 @@ function ExportPanel() {
                           : "Todos os períodos"}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">{b.department || "Todos"}</TableCell>
+                      <TableCell className="text-right">
+                        {b.csvContent ? (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-2 text-xs"
+                            onClick={() => {
+                              const blob = new Blob([b.csvContent!], { type: "text/csv;charset=utf-8;" });
+                              const url = URL.createObjectURL(blob);
+                              const a = document.createElement("a");
+                              a.href = url;
+                              const dateStr = b.createdAt
+                                ? new Date(b.createdAt).toISOString().slice(0, 10)
+                                : "sem-data";
+                              a.download = `bravo_lote_${b.id}_${dateStr}.csv`;
+                              a.click();
+                              URL.revokeObjectURL(url);
+                              toast.success(`CSV do lote #${b.id} baixado.`);
+                            }}
+                          >
+                            <Download className="w-3 h-3 mr-1" />
+                            Baixar CSV
+                          </Button>
+                        ) : (
+                          <span className="text-xs text-muted-foreground italic">Indisponível</span>
+                        )}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

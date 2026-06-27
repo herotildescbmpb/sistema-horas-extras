@@ -1,0 +1,1 @@
+ALTER TABLE `bravo_export_batches` ADD `csvContent` text;

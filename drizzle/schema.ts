@@ -234,6 +234,7 @@ export const bravoExportBatches = mysqlTable("bravo_export_batches", {
   startDate: varchar("startDate", { length: 10 }),   // filtro: data início
   endDate: varchar("endDate", { length: 10 }),       // filtro: data fim
   department: varchar("department", { length: 128 }), // filtro: setor
+  csvContent: text("csvContent"),                        // conteúdo CSV para re-download
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 export type BravoExportBatch = typeof bravoExportBatches.$inferSelect;

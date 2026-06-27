@@ -308,3 +308,13 @@
 - [ ] AppLayout: adicionar item "Feriados" → /admin/feriados
 - [ ] App.tsx: adicionar rota /admin/feriados
 - [x] Criar modo "Expediente CMAV" no EscalaWizard: tipo restrito ao setor CMAV, horários pré-definidos por tipo de dia (sáb/dom/feriado: 07:30–19:30; dias úteis: 13:00–19:00), interface simplificada de atribuição de militares por dia do calendário
+
+## Re-download CSV no Histórico de Exportações Bravo Sync (v49)
+
+- [x] Schema: adicionar coluna `csvContent text` na tabela `bravo_export_batches`
+- [x] Migration SQL aplicada via webdev_execute_sql
+- [x] createExportBatch: salvar CSV gerado no campo csvContent antes de inserir o lote
+- [x] Procedure getBatchCsv: buscar lote por ID e retornar csvContent
+- [x] BravoSync.tsx: adicionar coluna "Ações" na tabela de histórico com botão "Baixar CSV" por linha
+- [x] Botão "Baixar CSV" cria Blob com csvContent e dispara download com nome bravo_lote_{id}_{data}.csv
+- [x] Exibe "Indisponível" para lotes antigos sem csvContent salvo

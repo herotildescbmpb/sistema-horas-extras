@@ -1168,26 +1168,7 @@ export const appRouter = router({
         if (records.length === 0) {
           throw new TRPCError({ code: "NOT_FOUND", message: "Nenhum registro novo para exportar." });
         }
-        // Criar lote
-        const now = new Date();
-        const [batchResult] = await db.insert(bravoExportBatches).values({
-          exportedBy: ctx.user.id,
-          exportedByName: ctx.user.name || "",
-          totalRegistros: records.length,
-          startDate: input.startDate || null,
-          endDate: input.endDate || null,
-          department: input.departments && input.departments.length > 0 ? input.departments.join(", ") : null,
-        });
-        const batchId = (batchResult as any).insertId as number;
-        // Marcar registros como exportados
-        const ids = records.map((r) => r.id);
-        for (const id of ids) {
-          await db
-            .update(overtimeRecords)
-            .set({ exportedAt: now, exportBatchId: batchId })
-            .where(eq(overtimeRecords.id, id));
-        }
-        // Montar CSV no formato DAL
+        // Montar CSV no formato DAL ANTES de inserir o lote
         const header = "Matrícula;Data;Hora Início;Hora Fim;Duração (min);Modalidade;Setor;Tipo Escala;Função";
         const rows = records.map((r) => [
           r.servidor || "",
@@ -1201,6 +1182,26 @@ export const appRouter = router({
           r.funcao || "",
         ].join(";"));
         const csv = [header, ...rows].join("\n");
+        // Criar lote
+        const now = new Date();
+        const [batchResult] = await db.insert(bravoExportBatches).values({
+          exportedBy: ctx.user.id,
+          exportedByName: ctx.user.name || "",
+          totalRegistros: records.length,
+          startDate: input.startDate || null,
+          endDate: input.endDate || null,
+          department: input.departments && input.departments.length > 0 ? input.departments.join(", ") : null,
+          csvContent: csv,
+        });
+        const batchId = (batchResult as any).insertId as number;
+        // Marcar registros como exportados
+        const ids = records.map((r) => r.id);
+        for (const id of ids) {
+          await db
+            .update(overtimeRecords)
+            .set({ exportedAt: now, exportBatchId: batchId })
+            .where(eq(overtimeRecords.id, id));
+        }
         return {
           batchId,
           totalRegistros: records.length,
@@ -1219,6 +1220,26 @@ export const appRouter = router({
         .orderBy(desc(bravoExportBatches.createdAt))
         .limit(50);
     }),
+
+    // Re-download do CSV de um lote específico
+    getBatchCsv: adminProcedure
+      .input(z.object({ batchId: z.number() }))
+      .query(async ({ input }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB indisponível" });
+        const [batch] = await db
+          .select()
+          .from(bravoExportBatches)
+          .where(eq(bravoExportBatches.id, input.batchId))
+          .limit(1);
+        if (!batch) throw new TRPCError({ code: "NOT_FOUND", message: "Lote não encontrado" });
+        return {
+          batchId: batch.id,
+          csvContent: batch.csvContent ?? null,
+          exportedAt: batch.createdAt,
+          totalRegistros: batch.totalRegistros,
+        };
+      }),
   }),
 });
 export type AppRouter = typeof appRouter;
