@@ -17,7 +17,7 @@ import {
 import { StatusBadge, DayTypeBadge } from "@/components/StatusBadge";
 import {
   BarChart3,
-  Download,
+  FileDown,
   Calendar,
   FileText,
   TrendingUp,
@@ -118,6 +118,74 @@ export default function Reports() {
   );
 
   const [exportingDal, setExportingDal] = useState(false);
+  const [exportingPdf, setExportingPdf] = useState(false);
+
+  const handleExportPdf = () => {
+    if (!records?.length) { toast.error("Nenhum dado para exportar"); return; }
+    setExportingPdf(true);
+    try {
+      const statusLabel: Record<string, string> = { pending: "Pendente", approved: "Aprovado", rejected: "Rejeitado" };
+      const fmtDate = (d: string) => d.split("-").reverse().join("/");
+      const fmtMin = (m: number) => { const h = Math.floor(m / 60); const mn = m % 60; return mn === 0 ? `${h}h` : `${h}h ${mn}m`; };
+      const totalMin = records.reduce((s, r) => s + r.totalMinutes, 0);
+      const approvedMin = records.filter(r => r.status === "approved").reduce((s, r) => s + r.totalMinutes, 0);
+      const rows = records.map((r: any) => `
+        <tr>
+          <td>${fmtDate(r.date)}</td>
+          <td>${r.userName ?? r.userMatricula ?? ""}</td>
+          <td>${r.startTime} – ${r.endTime}</td>
+          <td>${fmtMin(r.totalMinutes)}</td>
+          <td>${r.modalidade ?? ""}</td>
+          <td>${r.department ?? ""}</td>
+          <td class="status-${r.status}">${statusLabel[r.status] ?? r.status}</td>
+        </tr>`).join("");
+      const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"/>
+        <title>Relatório de Horas Extras</title>
+        <style>
+          * { box-sizing: border-box; margin: 0; padding: 0; }
+          body { font-family: Arial, sans-serif; font-size: 11px; color: #111; padding: 20px; }
+          h1 { font-size: 17px; margin-bottom: 4px; color: #1e293b; }
+          .subtitle { font-size: 11px; color: #555; margin-bottom: 16px; }
+          .summary { display: flex; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
+          .summary-item { background: #f1f5f9; border-radius: 6px; padding: 8px 14px; min-width: 100px; }
+          .summary-item strong { display: block; font-size: 15px; color: #1e293b; }
+          .summary-item span { font-size: 10px; color: #64748b; }
+          table { width: 100%; border-collapse: collapse; margin-top: 4px; }
+          th { background: #1e293b; color: #fff; padding: 7px 8px; text-align: left; font-size: 10px; letter-spacing: 0.03em; }
+          td { padding: 5px 8px; border-bottom: 1px solid #e2e8f0; font-size: 10px; }
+          tr:nth-child(even) td { background: #f8fafc; }
+          .status-approved { color: #16a34a; font-weight: 700; }
+          .status-pending { color: #d97706; font-weight: 700; }
+          .status-rejected { color: #dc2626; font-weight: 700; }
+          .footer { margin-top: 14px; font-size: 9px; color: #94a3b8; text-align: right; border-top: 1px solid #e2e8f0; padding-top: 6px; }
+          @media print { @page { margin: 15mm; } body { padding: 0; } }
+        </style></head><body>
+        <h1>Relatório de Horas Extras</h1>
+        <p class="subtitle">Período: <strong>${fmtDate(startDate)}</strong> a <strong>${fmtDate(endDate)}</strong> &nbsp;&nbsp;|&nbsp;&nbsp; Gerado em: ${new Date().toLocaleString("pt-BR")}</p>
+        <div class="summary">
+          <div class="summary-item"><strong>${records.length}</strong><span>Registros</span></div>
+          <div class="summary-item"><strong>${fmtMin(totalMin)}</strong><span>Total de Horas</span></div>
+          <div class="summary-item"><strong>${fmtMin(approvedMin)}</strong><span>Horas Aprovadas</span></div>
+        </div>
+        <table>
+          <thead><tr><th>Data</th><th>Servidor</th><th>Horário</th><th>Duração</th><th>Modalidade</th><th>Setor</th><th>Status</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+        <p class="footer">Sistema de Horas Extras – DAL/3 &nbsp;|&nbsp; dalgest.sbs</p>
+        </body></html>`;
+      const win = window.open("", "_blank", "width=960,height=720");
+      if (!win) { toast.error("Permita pop-ups para exportar o PDF"); return; }
+      win.document.write(html);
+      win.document.close();
+      win.focus();
+      setTimeout(() => { win.print(); }, 500);
+      toast.success(`${records.length} registros prontos para impressão / salvar como PDF`);
+    } catch {
+      toast.error("Erro ao gerar PDF");
+    } finally {
+      setExportingPdf(false);
+    }
+  };
 
   const handleExport = async () => {
     setExporting(true);
@@ -223,16 +291,16 @@ export default function Reports() {
             Exportar CSV (DAL)
           </Button>
           <Button
-            onClick={handleExport}
-            disabled={exporting || !records?.length}
+            onClick={handleExportPdf}
+            disabled={exportingPdf || !records?.length}
             className="gap-2 shadow-sm h-10"
           >
-            {exporting ? (
+            {exportingPdf ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
-              <Download className="w-4 h-4" />
+              <FileDown className="w-4 h-4" />
             )}
-            Exportar CSV
+            Exportar PDF
           </Button>
         </div>
       </div>
