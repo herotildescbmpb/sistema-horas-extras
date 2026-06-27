@@ -22,6 +22,10 @@ import {
   FileText,
   History,
   Eye,
+  X,
+  Check,
+  ChevronDown,
+  Building2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -61,11 +65,26 @@ function ExportPanel() {
   const utils = trpc.useUtils();
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [department, setDepartment] = useState("");
+  const [selectedDepts, setSelectedDepts] = useState<string[]>([]);
+  const [deptDropdownOpen, setDeptDropdownOpen] = useState(false);
+
+  // Buscar lista de setores
+  const { data: deptList } = trpc.departments.list.useQuery();
+  const allDepts = (deptList || []).map((d: any) => d.name).sort();
+
+  const toggleDept = (name: string) => {
+    setSelectedDepts((prev) =>
+      prev.includes(name) ? prev.filter((d) => d !== name) : [...prev, name]
+    );
+  };
 
   const { data: preview, isLoading: loadingPreview, refetch: refetchPreview } =
     trpc.bravo.exportPreview.useQuery(
-      { startDate: startDate || undefined, endDate: endDate || undefined, department: department || undefined },
+      {
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
+        departments: selectedDepts.length > 0 ? selectedDepts : undefined,
+      },
       { enabled: true }
     );
 
@@ -74,7 +93,6 @@ function ExportPanel() {
 
   const createBatch = trpc.bravo.createExportBatch.useMutation({
     onSuccess: (res) => {
-      // Fazer download do CSV
       const blob = new Blob([res.csv], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -83,7 +101,6 @@ function ExportPanel() {
       a.download = `bravo_lote_${res.batchId}_${dateStr}.csv`;
       a.click();
       URL.revokeObjectURL(url);
-
       toast.success(`Lote #${res.batchId} exportado com ${res.totalRegistros} registros.`);
       refetchPreview();
       refetchBatches();
@@ -100,7 +117,7 @@ function ExportPanel() {
     createBatch.mutate({
       startDate: startDate || undefined,
       endDate: endDate || undefined,
-      department: department || undefined,
+      departments: selectedDepts.length > 0 ? selectedDepts : undefined,
     });
   };
 
@@ -138,17 +155,75 @@ function ExportPanel() {
                 className="w-full text-sm border rounded px-2 py-1.5 bg-background text-foreground"
               />
             </div>
-            <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">Setor (opcional)</label>
-              <input
-                type="text"
-                value={department}
-                onChange={(e) => setDepartment(e.target.value)}
-                placeholder="Ex: DAL"
-                className="w-full text-sm border rounded px-2 py-1.5 bg-background text-foreground"
-              />
+            {/* Multi-select de setores */}
+            <div className="relative">
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">
+                <Building2 className="inline w-3 h-3 mr-1" />
+                Setores (múltiplos)
+              </label>
+              <button
+                type="button"
+                onClick={() => setDeptDropdownOpen((o) => !o)}
+                className="w-full text-sm border rounded px-2 py-1.5 bg-background text-foreground flex items-center justify-between gap-1 hover:bg-muted/50 transition-colors"
+              >
+                <span className="truncate text-left">
+                  {selectedDepts.length === 0
+                    ? "Todos os setores"
+                    : selectedDepts.length === 1
+                    ? selectedDepts[0]
+                    : `${selectedDepts.length} setores selecionados`}
+                </span>
+                <ChevronDown className="w-3 h-3 shrink-0 text-muted-foreground" />
+              </button>
+              {deptDropdownOpen && (
+                <div className="absolute z-50 mt-1 w-full max-h-56 overflow-y-auto rounded-md border bg-popover shadow-md">
+                  {/* Limpar seleção */}
+                  {selectedDepts.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedDepts([])}
+                      className="w-full px-3 py-1.5 text-xs text-destructive hover:bg-muted/50 flex items-center gap-1 border-b"
+                    >
+                      <X className="w-3 h-3" /> Limpar seleção
+                    </button>
+                  )}
+                  {allDepts.map((dept: string) => (
+                    <button
+                      key={dept}
+                      type="button"
+                      onClick={() => toggleDept(dept)}
+                      className="w-full px-3 py-1.5 text-xs text-left hover:bg-muted/50 flex items-center gap-2"
+                    >
+                      <span className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
+                        selectedDepts.includes(dept)
+                          ? "bg-primary border-primary text-primary-foreground"
+                          : "border-muted-foreground"
+                      }`}>
+                        {selectedDepts.includes(dept) && <Check className="w-3 h-3" />}
+                      </span>
+                      <span className="truncate">{dept}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
+          {/* Tags dos setores selecionados */}
+          {selectedDepts.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {selectedDepts.map((d) => (
+                <span
+                  key={d}
+                  className="inline-flex items-center gap-1 text-xs bg-primary/10 text-primary rounded-full px-2 py-0.5 border border-primary/20"
+                >
+                  {d}
+                  <button type="button" onClick={() => toggleDept(d)} className="hover:text-destructive">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
 
           {/* Contador de prévia */}
           <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border">

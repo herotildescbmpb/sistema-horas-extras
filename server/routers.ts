@@ -8,7 +8,7 @@ import {
   bravoExportBatches,
   overtimeRecords,
 } from "../drizzle/schema";
-import { eq, desc, sql as drizzleSql, isNull, and, gte, lte } from "drizzle-orm";
+import { eq, desc, sql as drizzleSql, isNull, and, gte, lte, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
@@ -1120,7 +1120,7 @@ export const appRouter = router({
       .input(z.object({
         startDate: z.string().optional(), // YYYY-MM-DD
         endDate: z.string().optional(),
-        department: z.string().optional(),
+        departments: z.array(z.string()).optional(), // múltiplos setores
       }))
       .query(async ({ input }) => {
         const db = await getDb();
@@ -1131,7 +1131,8 @@ export const appRouter = router({
         ];
         if (input.startDate) conditions.push(gte(overtimeRecords.date, input.startDate));
         if (input.endDate) conditions.push(lte(overtimeRecords.date, input.endDate));
-        if (input.department) conditions.push(eq(overtimeRecords.department, input.department));
+        if (input.departments && input.departments.length > 0)
+          conditions.push(inArray(overtimeRecords.department, input.departments));
         const records = await db
           .select()
           .from(overtimeRecords)
@@ -1145,7 +1146,7 @@ export const appRouter = router({
       .input(z.object({
         startDate: z.string().optional(),
         endDate: z.string().optional(),
-        department: z.string().optional(),
+        departments: z.array(z.string()).optional(), // múltiplos setores
       }))
       .mutation(async ({ ctx, input }) => {
         const db = await getDb();
@@ -1157,7 +1158,8 @@ export const appRouter = router({
         ];
         if (input.startDate) conditions.push(gte(overtimeRecords.date, input.startDate));
         if (input.endDate) conditions.push(lte(overtimeRecords.date, input.endDate));
-        if (input.department) conditions.push(eq(overtimeRecords.department, input.department));
+        if (input.departments && input.departments.length > 0)
+          conditions.push(inArray(overtimeRecords.department, input.departments));
         const records = await db
           .select()
           .from(overtimeRecords)
@@ -1174,7 +1176,7 @@ export const appRouter = router({
           totalRegistros: records.length,
           startDate: input.startDate || null,
           endDate: input.endDate || null,
-          department: input.department || null,
+          department: input.departments && input.departments.length > 0 ? input.departments.join(", ") : null,
         });
         const batchId = (batchResult as any).insertId as number;
         // Marcar registros como exportados
