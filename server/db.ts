@@ -237,6 +237,61 @@ export async function updateDepartment(id: number, data: Partial<InsertDepartmen
 
 // ─── Overtime Records ─────────────────────────────────────────────────────────
 
+/**
+ * Verifica se há conflito de horário para um militar em uma data específica.
+ * Retorna os registros conflitantes (excluindo o próprio registro em edições).
+ *
+ * Lógica de sobreposição: dois intervalos [A, B] e [C, D] se sobrepõem quando A < D && C < B.
+ * Registros rejeitados são ignorados na verificação.
+ */
+export async function checkOvertimeConflict({
+  servidor,
+  date,
+  startTime,
+  endTime,
+  excludeId,
+}: {
+  servidor: string;
+  date: string;
+  startTime: string; // HH:MM ou HH:MM:SS
+  endTime: string;
+  excludeId?: number;
+}) {
+  const db = await getDb();
+  if (!db) return [];
+
+  // Normaliza para HH:MM para comparação
+  const norm = (t: string) => t.slice(0, 5);
+  const start = norm(startTime);
+  const end = norm(endTime);
+
+  // Busca todos os registros do mesmo servidor na mesma data que não foram rejeitados
+  const existing = await db
+    .select({
+      id: overtimeRecords.id,
+      startTime: overtimeRecords.startTime,
+      endTime: overtimeRecords.endTime,
+      tipoEscala: overtimeRecords.tipoEscala,
+      status: overtimeRecords.status,
+    })
+    .from(overtimeRecords)
+    .where(
+      and(
+        sql`SUBSTRING_INDEX(${overtimeRecords.servidor}, '-', 1) = ${servidor.trim()}`,
+        eq(overtimeRecords.date, date),
+        sql`${overtimeRecords.status} != 'rejected'`,
+        ...(excludeId ? [sql`${overtimeRecords.id} != ${excludeId}`] : [])
+      )
+    );
+
+  // Filtra sobreposições: [start, end) se sobrepõe com [s, e) quando start < e && s < end
+  return existing.filter((r) => {
+    const s = norm(r.startTime);
+    const e = norm(r.endTime);
+    return start < e && s < end;
+  });
+}
+
 export async function createOvertimeRecord(data: InsertOvertimeRecord) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -535,6 +590,32 @@ export async function launchEscala(escalaId: number, creatorUserId: number, auto
   if (!db) throw new Error("Database not available");
   const escala = await getEscalaById(escalaId);
   if (!escala) throw new Error("Escala não encontrada");
+
+  // Pré-verifica conflitos de horário para todos os itens antes de inserir qualquer um
+  const conflictErrors: string[] = [];
+  for (const item of escala.items) {
+    if (item.matricula) {
+      const conflicts = await checkOvertimeConflict({
+        servidor: item.matricula,
+        date: item.date,
+        startTime: item.startTime,
+        endTime: item.endTime,
+      });
+      if (conflicts.length > 0) {
+        const conflictInfo = conflicts
+          .map((c) => `${c.startTime.slice(0, 5)}–${c.endTime.slice(0, 5)}`)
+          .join(", ");
+        conflictErrors.push(
+          `Matrícula ${item.matricula} em ${item.date}: horário ${item.startTime.slice(0, 5)}–${item.endTime.slice(0, 5)} conflita com (${conflictInfo})`
+        );
+      }
+    }
+  }
+  if (conflictErrors.length > 0) {
+    throw new Error(
+      `Conflito de horário detectado em ${conflictErrors.length} item(s):\n${conflictErrors.join("\n")}`
+    );
+  }
 
   // Cria um overtime_record para cada item da escala
   for (const item of escala.items) {

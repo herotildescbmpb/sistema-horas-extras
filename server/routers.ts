@@ -21,6 +21,7 @@ import {
   getUserByEmail,
   createDepartment,
   createOvertimeRecord,
+  checkOvertimeConflict,
   createEscala,
   deleteOvertimeRecord,
   getAdminMonthSummary,
@@ -459,6 +460,26 @@ export const appRouter = router({
             code: "BAD_REQUEST",
             message: `Duração inválida: ${totalMinutes} minutos. Verifique horário de início e fim.`,
           });
+        }
+
+        // Guard: verifica conflito de horário para o mesmo militar na mesma data
+        const servidorMatricula = input.servidor ?? (ctx.user as any).matricula;
+        if (servidorMatricula) {
+          const conflicts = await checkOvertimeConflict({
+            servidor: servidorMatricula,
+            date: input.date,
+            startTime: input.startTime,
+            endTime: input.endTime,
+          });
+          if (conflicts.length > 0) {
+            const conflictInfo = conflicts
+              .map((c) => `${c.startTime.slice(0, 5)}–${c.endTime.slice(0, 5)}`)
+              .join(", ");
+            throw new TRPCError({
+              code: "CONFLICT",
+              message: `Conflito de horário: o militar já possui registro(s) nesta data com horário sobreposto (${conflictInfo}). Verifique antes de lançar.`,
+            });
+          }
         }
 
         // Chefe e Admin aprovam diretamente; Auxiliar Administrativo fica pendente
